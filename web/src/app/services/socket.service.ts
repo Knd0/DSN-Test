@@ -13,55 +13,53 @@ export class SocketService {
   }
 
   connect() {
-    this.socket = io('https://dsn-test-production.up.railway.app', {
-      autoConnect: false,
-    });
+  this.socket = io('https://dsn-test-production.up.railway.app', {
+    autoConnect: false,
+  });
 
-    const connectSocket = () => this.socket.connect();
+  const connectSocket = () => this.socket.connect();
 
-    this.socket.on('connect', () =>
-      console.log('WS conectado', this.socket.id)
-    );
-    this.socket.on('disconnect', () => {
-      console.warn('WS desconectado, reintentando en 2s...');
-      setTimeout(connectSocket, 2000);
-    });
+  this.socket.on('connect', () =>
+    console.log('WS conectado', this.socket.id)
+  );
 
-    // snapshot inicial
-    this.socket.on('board:snapshot', (board: Board) => {
-      this._board.set(board);
-    });
+  this.socket.on('disconnect', () => {
+    console.warn('WS desconectado, reintentando en 2s...');
+    setTimeout(connectSocket, 2000);
+  });
 
-    // actualizaciones en tiempo real
-    this.socket.on(
-      'board:update',
-      (event: {
-        type: 'created' | 'moved' | 'updated' | 'deleted';
-        task: Task;
-      }) => {
-        const current = { ...this._board() };
-        const task = event.task;
+  // ----------------------------
+  // snapshot inicial desde socket
+  // ----------------------------
+  this.socket.on('board:snapshot', (board: Board) => {
+    console.log('Board inicial recibido por socket:', board);
+    this._board.set(board);
+  });
 
-        // eliminar de todas las columnas
-        (['todo', 'doing', 'done'] as Column[]).forEach((col) => {
-          current[col] = current[col].filter((t) => t.id !== task.id);
-        });
+  // actualizaciones en tiempo real
+  this.socket.on(
+    'board:update',
+    (event: {
+      type: 'created' | 'moved' | 'updated' | 'deleted';
+      task: Task;
+    }) => {
+      const current = { ...this._board() };
+      const task = event.task;
 
-        // dependiendo del evento, actualizar
-        if (
-          event.type === 'created' ||
-          event.type === 'moved' ||
-          event.type === 'updated'
-        ) {
-          current[task.column].push(task);
-        }
+      (['todo', 'doing', 'done'] as Column[]).forEach((col) => {
+        current[col] = current[col].filter((t) => t.id !== task.id);
+      });
 
-        this._board.set(current);
+      if (['created', 'moved', 'updated'].includes(event.type)) {
+        current[task.column].push(task);
       }
-    );
 
-    connectSocket();
-  }
+      this._board.set(current);
+    }
+  );
+
+  connectSocket();
+}
 
   // métodos para manipular localmente y emitir
   addTask(task: Task) {

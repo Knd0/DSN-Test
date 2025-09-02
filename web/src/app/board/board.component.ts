@@ -196,9 +196,8 @@ export class BoardComponent implements OnInit {
 
   constructor(public socket: SocketService) {}
 
-  async ngOnInit() {
+  ngOnInit() {
     this.socket.connect();
-    await this.socket.fetchInitialBoard(); // carga desde la base de datos
   }
 
   get filteredBoard(): Record<Column, Task[]> {
