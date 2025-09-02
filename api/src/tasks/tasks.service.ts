@@ -1,56 +1,55 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Task } from './task.model';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { TaskEntity } from './task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
-import { v4 as uuid } from 'uuid';
+import { Column } from './task-column.enum';
+
 
 @Injectable()
 export class TasksService {
-  private tasks: Task[] = [];
+  constructor(
+    @InjectRepository(TaskEntity)
+    private readonly taskRepo: Repository<TaskEntity>,
+  ) {}
 
-  findBoard() {
+  async findBoard() {
+    const tasks = await this.taskRepo.find();
     return {
-      todo: this.tasks.filter(t => t.column === 'todo'),
-      doing: this.tasks.filter(t => t.column === 'doing'),
-      done: this.tasks.filter(t => t.column === 'done'),
+      todo: tasks.filter((t) => t.column === 'todo'),
+      doing: tasks.filter((t) => t.column === 'doing'),
+      done: tasks.filter((t) => t.column === 'done'),
     };
   }
 
-  create(dto: CreateTaskDto): Task {
-    const now = new Date().toISOString();
-    const task: Task = {
-      id: uuid(),
+  async create(dto: CreateTaskDto) {
+    const task = this.taskRepo.create({
       title: dto.title,
       description: dto.description,
-      column: 'todo',
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.tasks.push(task);
-    return task;
+      column: Column.TODO,
+    });
+
+    return this.taskRepo.save(task);
   }
 
-  move(id: string, dto: MoveTaskDto): Task {
-    const task = this.tasks.find(t => t.id === id);
+  async move(id: string, dto: MoveTaskDto) {
+    const task = await this.taskRepo.findOne({ where: { id } });
     if (!task) throw new NotFoundException(`Task ${id} not found`);
     task.column = dto.column;
-    task.updatedAt = new Date().toISOString();
-    return task;
+    return this.taskRepo.save(task);
   }
 
-  update(id: string, dto: Partial<CreateTaskDto>): Task {
-  const task = this.tasks.find(t => t.id === id);
-  if (!task) throw new NotFoundException(`Task ${id} not found`);
-  if (dto.title !== undefined) task.title = dto.title;
-  if (dto.description !== undefined) task.description = dto.description;
-  task.updatedAt = new Date().toISOString();
-  return task;
-}
+  async update(id: string, dto: Partial<CreateTaskDto>) {
+    const task = await this.taskRepo.findOne({ where: { id } });
+    if (!task) throw new NotFoundException(`Task ${id} not found`);
+    Object.assign(task, dto);
+    return this.taskRepo.save(task);
+  }
 
-remove(id: string): Task {
-  const index = this.tasks.findIndex(t => t.id === id);
-  if (index === -1) throw new NotFoundException(`Task ${id} not found`);
-  const [task] = this.tasks.splice(index, 1);
-  return task;
-}
+  async delete(id: string) {
+    const task = await this.taskRepo.findOne({ where: { id } });
+    if (!task) throw new NotFoundException(`Task ${id} not found`);
+    return this.taskRepo.remove(task);
+  }
 }
