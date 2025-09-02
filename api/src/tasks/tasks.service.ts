@@ -29,7 +29,6 @@ export class TasksService {
       description: dto.description,
       column: Column.TODO,
     });
-
     return this.taskRepo.save(task);
   }
 
