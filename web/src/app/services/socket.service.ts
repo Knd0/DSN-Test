@@ -13,11 +13,15 @@ export class SocketService {
   }
 
   connect() {
-    this.socket = io('https://dsn-test-production.up.railway.app', { autoConnect: false });
+    this.socket = io('https://dsn-test-production.up.railway.app', {
+      autoConnect: false,
+    });
 
     const connectSocket = () => this.socket.connect();
 
-    this.socket.on('connect', () => console.log('WS conectado', this.socket.id));
+    this.socket.on('connect', () =>
+      console.log('WS conectado', this.socket.id)
+    );
     this.socket.on('disconnect', () => {
       console.warn('WS desconectado, reintentando en 2s...');
       setTimeout(connectSocket, 2000);
@@ -29,23 +33,33 @@ export class SocketService {
     });
 
     // actualizaciones en tiempo real
-    this.socket.on('board:update', (event: { type: 'created' | 'moved' | 'updated' | 'deleted'; task: Task }) => {
-      const current = { ...this._board() };
-      const task = event.task;
+    this.socket.on(
+      'board:update',
+      (event: {
+        type: 'created' | 'moved' | 'updated' | 'deleted';
+        task: Task;
+      }) => {
+        const current = { ...this._board() };
+        const task = event.task;
 
-      // eliminar de todas las columnas
-      (['todo', 'doing', 'done'] as Column[]).forEach((col) => {
-        current[col] = current[col].filter((t) => t.id !== task.id);
-      });
+        // eliminar de todas las columnas
+        (['todo', 'doing', 'done'] as Column[]).forEach((col) => {
+          current[col] = current[col].filter((t) => t.id !== task.id);
+        });
 
-      // dependiendo del evento, actualizar
-      if (event.type === 'created' || event.type === 'moved' || event.type === 'updated') {
-        current[task.column].push(task);
+        // dependiendo del evento, actualizar
+        if (
+          event.type === 'created' ||
+          event.type === 'moved' ||
+          event.type === 'updated'
+        ) {
+          current[task.column].push(task);
+        }
+        // deleted: ya se eliminó de todas las columnas
+
+        this._board.set(current);
       }
-      // deleted: ya se eliminó de todas las columnas
-
-      this._board.set(current);
-    });
+    );
 
     connectSocket();
   }
@@ -92,22 +106,32 @@ export class SocketService {
       current[col] = current[col].filter((t) => t.id !== taskId);
     });
     this._board.set(current);
-    this.socket.emit('board:update', { type: 'deleted', task: { id: taskId } as Task });
+    this.socket.emit('board:update', {
+      type: 'deleted',
+      task: { id: taskId } as Task,
+    });
   }
   async fetchInitialBoard() {
-  try {
-    const res = await fetch('https://dsn-test-production.up.railway.app/tasks/board');
-    if (!res.ok) throw new Error('Error cargando tareas');
-    const tasks: Task[] = await res.json();
+    try {
+      const res = await fetch(
+        'https://dsn-test-production.up.railway.app/tasks/board'
+      );
+      if (!res.ok) throw new Error('Error cargando tareas');
 
-    const board: Board = { todo: [], doing: [], done: [] };
-    tasks.forEach(task => {
-      board[task.column].push(task);
-    });
+      const data = await res.json();
+      console.log('Respuesta inicial del board:', data); // <- depuración
 
-    this._board.set(board);
-  } catch (err) {
-    console.error('Error al cargar el board inicial', err);
+      // asegurarnos que sea un array
+      const tasks: Task[] = Array.isArray(data) ? data : [];
+
+      const board: Board = { todo: [], doing: [], done: [] };
+      tasks.forEach((task) => {
+        board[task.column].push(task);
+      });
+
+      this._board.set(board);
+    } catch (err) {
+      console.error('Error al cargar el board inicial', err);
+    }
   }
-}
 }
