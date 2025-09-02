@@ -18,7 +18,6 @@ export class SocketService {
     const connectSocket = () => this.socket.connect();
 
     this.socket.on('connect', () => console.log('WS conectado', this.socket.id));
-
     this.socket.on('disconnect', () => {
       console.warn('WS desconectado, reintentando en 2s...');
       setTimeout(connectSocket, 2000);
@@ -30,7 +29,7 @@ export class SocketService {
     });
 
     // actualizaciones en tiempo real
-    this.socket.on('board:update', (event: { type: 'created' | 'moved'; task: Task }) => {
+    this.socket.on('board:update', (event: { type: 'created' | 'moved' | 'updated' | 'deleted'; task: Task }) => {
       const current = { ...this._board() };
       const task = event.task;
 
@@ -39,12 +38,60 @@ export class SocketService {
         current[col] = current[col].filter((t) => t.id !== task.id);
       });
 
-      // agregar a la columna correspondiente
-      current[task.column].push(task);
+      // dependiendo del evento, actualizar
+      if (event.type === 'created' || event.type === 'moved' || event.type === 'updated') {
+        current[task.column].push(task);
+      }
+      // deleted: ya se eliminó de todas las columnas
 
       this._board.set(current);
     });
 
     connectSocket();
+  }
+
+  // métodos para manipular localmente y emitir
+  addTask(task: Task) {
+    const current = { ...this._board() };
+    current[task.column].push(task);
+    this._board.set(current);
+    this.socket.emit('board:update', { type: 'created', task });
+  }
+
+  moveTask(taskId: string, column: Column) {
+    const current = { ...this._board() };
+    let movedTask: Task | undefined;
+
+    (['todo', 'doing', 'done'] as Column[]).forEach((col) => {
+      const index = current[col].findIndex((t) => t.id === taskId);
+      if (index !== -1) {
+        movedTask = { ...current[col][index], column };
+        current[col].splice(index, 1);
+      }
+    });
+
+    if (movedTask) {
+      current[column].push(movedTask);
+      this._board.set(current);
+      this.socket.emit('board:update', { type: 'moved', task: movedTask });
+    }
+  }
+
+  updateTask(task: Task) {
+    const current = { ...this._board() };
+    (['todo', 'doing', 'done'] as Column[]).forEach((col) => {
+      current[col] = current[col].map((t) => (t.id === task.id ? task : t));
+    });
+    this._board.set(current);
+    this.socket.emit('board:update', { type: 'updated', task });
+  }
+
+  removeTask(taskId: string) {
+    const current = { ...this._board() };
+    (['todo', 'doing', 'done'] as Column[]).forEach((col) => {
+      current[col] = current[col].filter((t) => t.id !== taskId);
+    });
+    this._board.set(current);
+    this.socket.emit('board:update', { type: 'deleted', task: { id: taskId } as Task });
   }
 }
