@@ -178,7 +178,7 @@ export class BoardComponent implements OnInit {
 
   createTask() {
     if (!this.newTaskTitle.trim()) return;
-    fetch('https://www.dsn-test-production.up.railway.app/tasks', {
+    fetch('https://dsn-test-production.up.railway.app/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: this.newTaskTitle, description: this.newTaskDescription }),
@@ -198,7 +198,7 @@ export class BoardComponent implements OnInit {
       event.currentIndex
     );
 
-    fetch(`https://www.dsn-test-production.up.railway.app/tasks/${task.id}/move`, {
+    fetch(`https://dsn-test-production.up.railway.app/tasks/${task.id}/move`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ column: targetCol }),
@@ -244,7 +244,7 @@ export class BoardComponent implements OnInit {
   this.socket['_board'].set(board);
 
   // Llamada al backend para persistir cambios
-  fetch(`https://www.dsn-test-production.up.railway.app//tasks/${taskId}`, {
+  fetch(`https://dsn-test-production.up.railway.app//tasks/${taskId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -281,7 +281,7 @@ export class BoardComponent implements OnInit {
   const taskId = this.modalTask.id;
 
   // Llamada al backend
-  fetch(`https://www.dsn-test-production.up.railway.app//tasks/${taskId}`, {
+  fetch(`https://dsn-test-production.up.railway.app//tasks/${taskId}`, {
     method: 'DELETE',
   }).then(() => {
     // Actualizar estado local inmediatamente
