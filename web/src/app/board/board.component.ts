@@ -17,7 +17,7 @@ import type { Column, Task } from '../models/task.model';
   template: `
     <div class="p-4 bg-gray-900 min-h-screen text-white">
       <h1 class="text-3xl font-bold mb-6 text-center tracking-wide">
-        🚀 Mini Kanban
+        DSN Kanban
       </h1>
 
       <!-- Buscar -->
