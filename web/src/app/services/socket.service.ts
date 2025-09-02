@@ -13,7 +13,7 @@ export class SocketService {
   }
 
   connect() {
-    this.socket = io('https://www.dsn-test-production.up.railway.app', { autoConnect: false });
+    this.socket = io('https://dsn-test-production.up.railway.app', { autoConnect: false });
 
     const connectSocket = () => this.socket.connect();
 

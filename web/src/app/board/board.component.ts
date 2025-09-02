@@ -244,7 +244,7 @@ export class BoardComponent implements OnInit {
   this.socket['_board'].set(board);
 
   // Llamada al backend para persistir cambios
-  fetch(`https://dsn-test-production.up.railway.app//tasks/${taskId}`, {
+  fetch(`https://dsn-test-production.up.railway.app/tasks/${taskId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -281,7 +281,7 @@ export class BoardComponent implements OnInit {
   const taskId = this.modalTask.id;
 
   // Llamada al backend
-  fetch(`https://dsn-test-production.up.railway.app//tasks/${taskId}`, {
+  fetch(`https://dsn-test-production.up.railway.app/tasks/${taskId}`, {
     method: 'DELETE',
   }).then(() => {
     // Actualizar estado local inmediatamente
