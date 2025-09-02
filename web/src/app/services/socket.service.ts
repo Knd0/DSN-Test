@@ -94,4 +94,20 @@ export class SocketService {
     this._board.set(current);
     this.socket.emit('board:update', { type: 'deleted', task: { id: taskId } as Task });
   }
+  async fetchInitialBoard() {
+  try {
+    const res = await fetch('https://dsn-test-production.up.railway.app/tasks/board');
+    if (!res.ok) throw new Error('Error cargando tareas');
+    const tasks: Task[] = await res.json();
+
+    const board: Board = { todo: [], doing: [], done: [] };
+    tasks.forEach(task => {
+      board[task.column].push(task);
+    });
+
+    this._board.set(board);
+  } catch (err) {
+    console.error('Error al cargar el board inicial', err);
+  }
+}
 }

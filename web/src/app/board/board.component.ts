@@ -1,7 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DragDropModule, CdkDragDrop, transferArrayItem } from '@angular/cdk/drag-drop';
+import {
+  DragDropModule,
+  CdkDragDrop,
+  transferArrayItem,
+} from '@angular/cdk/drag-drop';
 import Swal from 'sweetalert2';
 import { SocketService } from '../services/socket.service';
 import type { Column, Task } from '../models/task.model';
@@ -12,7 +16,9 @@ import type { Column, Task } from '../models/task.model';
   imports: [CommonModule, FormsModule, DragDropModule],
   template: `
     <div class="p-4 bg-gray-900 min-h-screen text-white">
-      <h1 class="text-3xl font-bold mb-6 text-center tracking-wide">🚀 Mini Kanban</h1>
+      <h1 class="text-3xl font-bold mb-6 text-center tracking-wide">
+        🚀 Mini Kanban
+      </h1>
 
       <!-- Buscar -->
       <input
@@ -23,7 +29,10 @@ import type { Column, Task } from '../models/task.model';
       />
 
       <!-- Crear nueva tarea -->
-      <form (ngSubmit)="createTask()" class="mb-6 flex justify-center gap-2 flex-wrap">
+      <form
+        (ngSubmit)="createTask()"
+        class="mb-6 flex justify-center gap-2 flex-wrap"
+      >
         <input
           type="text"
           [(ngModel)]="newTaskTitle"
@@ -54,8 +63,12 @@ import type { Column, Task } from '../models/task.model';
           class="flex-1 p-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02]"
           [ngClass]="columnColors[col]"
         >
-          <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
-            <h2 class="text-xl font-semibold capitalize tracking-wide">{{ col }}</h2>
+          <div
+            class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2"
+          >
+            <h2 class="text-xl font-semibold capitalize tracking-wide">
+              {{ col }}
+            </h2>
             <span class="bg-gray-700 text-sm px-2 py-1 rounded-full">
               {{ filteredBoard()[col]?.length || 0 }}
             </span>
@@ -77,7 +90,9 @@ import type { Column, Task } from '../models/task.model';
               (click)="openModal(task)"
             >
               <div class="truncate max-w-[80%]">{{ task.title }}</div>
-              <span class="text-gray-400 text-xs">{{ task.createdAt | date:'shortTime' }}</span>
+              <span class="text-gray-400 text-xs">{{
+                task.createdAt | date : 'shortTime'
+              }}</span>
             </div>
           </div>
         </div>
@@ -85,14 +100,27 @@ import type { Column, Task } from '../models/task.model';
     </div>
 
     <!-- Modal -->
-    <div *ngIf="modalTask" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div class="bg-gray-800 rounded-2xl p-6 w-96 shadow-lg transform transition-transform duration-300 scale-100">
-        <h3 class="text-2xl font-bold mb-4">{{ isEditing ? 'Editar Tarea' : modalTask.title }}</h3>
+    <div
+      *ngIf="modalTask"
+      class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
+    >
+      <div
+        class="bg-gray-800 rounded-2xl p-6 w-96 shadow-lg transform transition-transform duration-300 scale-100"
+      >
+        <h3 class="text-2xl font-bold mb-4">
+          {{ isEditing ? 'Editar Tarea' : modalTask.title }}
+        </h3>
 
-        <p *ngIf="!isEditing" class="mb-4 text-gray-300">{{ modalTask.description || 'Sin descripción' }}</p>
+        <p *ngIf="!isEditing" class="mb-4 text-gray-300">
+          {{ modalTask.description || 'Sin descripción' }}
+        </p>
 
         <div *ngIf="isEditing" class="flex flex-col gap-2">
-          <input type="text" [(ngModel)]="modalTask.title" class="p-2 rounded text-black w-full" />
+          <input
+            type="text"
+            [(ngModel)]="modalTask.title"
+            class="p-2 rounded text-black w-full"
+          />
           <textarea
             [(ngModel)]="modalTask.description"
             rows="4"
@@ -102,16 +130,30 @@ import type { Column, Task } from '../models/task.model';
         </div>
 
         <div class="flex justify-end gap-2 mt-4">
-          <button *ngIf="!isEditing" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700" (click)="isEditing = true">
+          <button
+            *ngIf="!isEditing"
+            class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+            (click)="isEditing = true"
+          >
             Editar
           </button>
-          <button *ngIf="isEditing" class="bg-green-600 px-4 py-2 rounded hover:bg-green-700" (click)="updateTask()">
+          <button
+            *ngIf="isEditing"
+            class="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
+            (click)="updateTask()"
+          >
             Guardar
           </button>
-          <button class="bg-red-600 px-4 py-2 rounded hover:bg-red-700" (click)="confirmDelete()">
+          <button
+            class="bg-red-600 px-4 py-2 rounded hover:bg-red-700"
+            (click)="confirmDelete()"
+          >
             Eliminar
           </button>
-          <button class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700" (click)="closeModal()">
+          <button
+            class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700"
+            (click)="closeModal()"
+          >
             Cerrar
           </button>
         </div>
@@ -120,10 +162,21 @@ import type { Column, Task } from '../models/task.model';
   `,
   styles: [
     `
-      .cdk-drag-preview { box-shadow: 0 5px 15px rgba(0,0,0,0.5); border-radius: 0.75rem; transform: rotate(2deg); }
-      .cdk-drag-placeholder { opacity: 0.3; }
-      .cdk-drag { transition: transform 0.3s ease; }
-      .cdk-drop-list-dragging { background-color: rgba(255, 255, 255, 0.05); transition: background-color 0.2s ease; }
+      .cdk-drag-preview {
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        border-radius: 0.75rem;
+        transform: rotate(2deg);
+      }
+      .cdk-drag-placeholder {
+        opacity: 0.3;
+      }
+      .cdk-drag {
+        transition: transform 0.3s ease;
+      }
+      .cdk-drop-list-dragging {
+        background-color: rgba(255, 255, 255, 0.05);
+        transition: background-color 0.2s ease;
+      }
     `,
   ],
 })
@@ -143,9 +196,9 @@ export class BoardComponent implements OnInit {
 
   constructor(public socket: SocketService) {}
 
-  ngOnInit() {
-    // conectar al socket y recibir snapshot inicial
+  async ngOnInit() {
     this.socket.connect();
+    await this.socket.fetchInitialBoard(); // carga desde la base de datos
   }
 
   createTask() {
@@ -157,7 +210,7 @@ export class BoardComponent implements OnInit {
       description: this.newTaskDescription,
       column: 'todo',
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
 
     this.socket.addTask(newTask);
@@ -182,16 +235,22 @@ export class BoardComponent implements OnInit {
   filteredBoard() {
     const board = this.socket.board();
     const filtered: Record<Column, Task[]> = { todo: [], doing: [], done: [] };
-    (['todo', 'doing', 'done'] as Column[]).forEach(col => {
-      filtered[col] = board[col].filter(task =>
+    (['todo', 'doing', 'done'] as Column[]).forEach((col) => {
+      filtered[col] = board[col].filter((task) =>
         task.title.toLowerCase().includes(this.searchText.toLowerCase())
       );
     });
     return filtered;
   }
 
-  openModal(task: Task) { this.modalTask = { ...task }; this.isEditing = false; }
-  closeModal() { this.modalTask = null; this.isEditing = false; }
+  openModal(task: Task) {
+    this.modalTask = { ...task };
+    this.isEditing = false;
+  }
+  closeModal() {
+    this.modalTask = null;
+    this.isEditing = false;
+  }
 
   updateTask() {
     if (!this.modalTask) return;
@@ -222,6 +281,6 @@ export class BoardComponent implements OnInit {
   }
 
   getConnectedCols(col: Column): string[] {
-    return this.columns.filter(c => c !== col);
+    return this.columns.filter((c) => c !== col);
   }
 }
