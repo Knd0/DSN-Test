@@ -115,23 +115,20 @@ export class SocketService {
   // Fetch inicial desde el backend (corregido)
   // -------------------------------------
   async fetchInitialBoard() {
-    try {
-      const res = await fetch(
-        'https://dsn-test-production.up.railway.app/tasks/board'
-      );
-      if (!res.ok) throw new Error('Error cargando tareas');
+  try {
+    const res = await fetch(
+      'https://dsn-test-production.up.railway.app/tasks/board'
+    );
+    if (!res.ok) throw new Error('Error cargando tareas');
 
-      const data: Task[] = await res.json();
-      console.log('Tareas iniciales recibidas:', data);
+    // ahora recibimos un Board completo
+    const board: Board = await res.json();
+    console.log('Board inicial recibido:', board);
 
-      const board: Board = { todo: [], doing: [], done: [] };
-      data.forEach((task) => {
-        if (board[task.column]) board[task.column].push(task);
-      });
-
-      this._board.set(board);
-    } catch (err) {
-      console.error('Error al cargar el board inicial', err);
-    }
+    // asignar directamente al signal
+    this._board.set(board);
+  } catch (err) {
+    console.error('Error al cargar el board inicial', err);
   }
+}
 }
