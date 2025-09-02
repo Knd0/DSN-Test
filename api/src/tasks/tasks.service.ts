@@ -37,4 +37,20 @@ export class TasksService {
     task.updatedAt = new Date().toISOString();
     return task;
   }
+
+  update(id: string, dto: Partial<CreateTaskDto>): Task {
+  const task = this.tasks.find(t => t.id === id);
+  if (!task) throw new NotFoundException(`Task ${id} not found`);
+  if (dto.title !== undefined) task.title = dto.title;
+  if (dto.description !== undefined) task.description = dto.description;
+  task.updatedAt = new Date().toISOString();
+  return task;
+}
+
+remove(id: string): Task {
+  const index = this.tasks.findIndex(t => t.id === id);
+  if (index === -1) throw new NotFoundException(`Task ${id} not found`);
+  const [task] = this.tasks.splice(index, 1);
+  return task;
+}
 }

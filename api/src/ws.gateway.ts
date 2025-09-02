@@ -1,7 +1,10 @@
-import { OnGatewayConnection, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import {
+  OnGatewayConnection,
+  WebSocketGateway,
+  WebSocketServer,
+} from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Task } from './tasks/task.model';
-
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class WsGateway implements OnGatewayConnection {
@@ -11,7 +14,10 @@ export class WsGateway implements OnGatewayConnection {
     client.emit('board:snapshot', { todo: [], doing: [], done: [] });
   }
 
-  emitUpdate(event: { type: 'created' | 'moved'; task: Task }) {
+  emitUpdate(event: {
+    type: 'created' | 'moved' | 'updated' | 'deleted';
+    task: Task;
+  }) {
     this.server.emit('board:update', event);
   }
 }
