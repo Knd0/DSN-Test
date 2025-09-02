@@ -173,8 +173,22 @@ export class BoardComponent implements OnInit {
   constructor(public socket: SocketService) {}
 
   ngOnInit() {
-    this.socket.connect();
-  }
+  // 1️⃣ Conectar el socket
+  this.socket.connect();
+
+  // 2️⃣ Traer todas las tareas existentes desde la DB al cargar la página
+  fetch('https://dsn-test-production.up.railway.app/tasks')
+    .then(res => res.json())
+    .then((tasks: Task[]) => {
+      const board: Record<Column, Task[]> = { todo: [], doing: [], done: [] };
+      tasks.forEach(task => board[task.column].push(task));
+
+      // Actualizamos el signal para que Angular muestre las tareas
+      this.socket['_board'].set(board);
+    })
+    .catch(err => console.error('Error cargando tareas', err));
+}
+
 
   createTask() {
     if (!this.newTaskTitle.trim()) return;
