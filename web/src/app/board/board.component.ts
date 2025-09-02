@@ -84,7 +84,7 @@ import type { Column, Task } from '../models/task.model';
       </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Modal Profesional -->
     <div *ngIf="modalTask" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div class="bg-gray-800 rounded-2xl p-6 w-96 shadow-lg transform transition-transform duration-300 scale-100">
         <h3 class="text-2xl font-bold mb-4">{{ isEditing ? 'Editar Tarea' : modalTask.title }}</h3>
@@ -92,27 +92,69 @@ import type { Column, Task } from '../models/task.model';
         <p *ngIf="!isEditing" class="mb-4 text-gray-300">{{ modalTask.description || 'Sin descripción' }}</p>
 
         <div *ngIf="isEditing" class="flex flex-col gap-2">
-          <input type="text" [(ngModel)]="modalTask.title" class="p-2 rounded text-black w-full" />
-          <textarea [(ngModel)]="modalTask.description" rows="4" class="p-2 rounded text-black w-full" placeholder="Descripción"></textarea>
+          <input
+            type="text"
+            [(ngModel)]="modalTask.title"
+            class="p-2 rounded text-black w-full"
+          />
+          <textarea
+            [(ngModel)]="modalTask.description"
+            rows="4"
+            class="p-2 rounded text-black w-full"
+            placeholder="Descripción"
+          ></textarea>
         </div>
 
         <div class="flex justify-end gap-2 mt-4">
-          <button *ngIf="!isEditing" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700" (click)="isEditing = true">Editar</button>
-          <button *ngIf="isEditing" class="bg-green-600 px-4 py-2 rounded hover:bg-green-700" (click)="updateTask()">Guardar</button>
-          <button class="bg-red-600 px-4 py-2 rounded hover:bg-red-700" (click)="confirmDelete()">Eliminar</button>
-          <button class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700" (click)="closeModal()">Cerrar</button>
+          <button
+            *ngIf="!isEditing"
+            class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+            (click)="isEditing = true"
+          >
+            Editar
+          </button>
+          <button
+            *ngIf="isEditing"
+            class="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
+            (click)="updateTask()"
+          >
+            Guardar
+          </button>
+          <button
+            class="bg-red-600 px-4 py-2 rounded hover:bg-red-700"
+            (click)="confirmDelete()"
+          >
+            Eliminar
+          </button>
+          <button
+            class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700"
+            (click)="closeModal()"
+          >
+            Cerrar
+          </button>
         </div>
       </div>
     </div>
   `,
   styles: [
     `
-      .cdk-drag-preview { box-shadow: 0 5px 15px rgba(0,0,0,0.5); border-radius: 0.75rem; transform: rotate(2deg); }
-      .cdk-drag-placeholder { opacity: 0.3; }
-      .cdk-drag { transition: transform 0.3s ease; }
-      .cdk-drop-list-dragging { background-color: rgba(255, 255, 255, 0.05); transition: background-color 0.2s ease; }
-    `
-  ]
+      .cdk-drag-preview {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        border-radius: 0.75rem;
+        transform: rotate(2deg);
+      }
+      .cdk-drag-placeholder {
+        opacity: 0.3;
+      }
+      .cdk-drag {
+        transition: transform 0.3s ease;
+      }
+      .cdk-drop-list-dragging {
+        background-color: rgba(255, 255, 255, 0.05);
+        transition: background-color 0.2s ease;
+      }
+    `,
+  ],
 })
 export class BoardComponent implements OnInit {
   columns: Column[] = ['todo', 'doing', 'done'];
@@ -134,30 +176,18 @@ export class BoardComponent implements OnInit {
     this.socket.connect();
   }
 
-  filteredBoard() {
-    const board = this.socket.board();
-    const filtered: Record<Column, Task[]> = { todo: [], doing: [], done: [] };
-    (['todo','doing','done'] as Column[]).forEach(col => {
-      filtered[col] = board[col].filter(t => t.title.toLowerCase().includes(this.searchText.toLowerCase()));
-    });
-    return filtered;
-  }
-
-  getConnectedCols(col: Column) {
-    return this.columns.filter(c => c !== col);
-  }
-
   createTask() {
     if (!this.newTaskTitle.trim()) return;
+
     fetch('https://dsn-test-production.up.railway.app/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: this.newTaskTitle, description: this.newTaskDescription }),
-    })
-      .then(res => res.json())
-      .then((task: Task) => {
-        this.socket.addTask(task);
-      });
+      body: JSON.stringify({
+        title: this.newTaskTitle,
+        description: this.newTaskDescription,
+      }),
+    });
+
     this.newTaskTitle = '';
     this.newTaskDescription = '';
   }
@@ -166,34 +196,57 @@ export class BoardComponent implements OnInit {
     const task = event.previousContainer.data[event.previousIndex];
     if (task.column === targetCol) return;
 
-    transferArrayItem(event.previousContainer.data, event.container.data, event.previousIndex, event.currentIndex);
+    // UI: movemos visualmente en la lista local
+    transferArrayItem(
+      event.previousContainer.data,
+      event.container.data,
+      event.previousIndex,
+      event.currentIndex
+    );
 
+    // backend: el socket se encargará de actualizar a todos
     fetch(`https://dsn-test-production.up.railway.app/tasks/${task.id}/move`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ column: targetCol }),
-    }).then(() => {
-      this.socket.moveTask(task.id, targetCol);
     });
   }
 
-  openModal(task: Task) { this.modalTask = { ...task }; this.isEditing = false; }
-  closeModal() { this.modalTask = null; this.isEditing = false; }
+  getConnectedCols(col: Column): string[] {
+    return this.columns.filter(c => c !== col);
+  }
+
+  filteredBoard() {
+    const board = this.socket.board();
+    const filtered: Record<Column, Task[]> = { todo: [], doing: [], done: [] };
+    (['todo', 'doing', 'done'] as Column[]).forEach(col => {
+      filtered[col] = board[col].filter(task =>
+        task.title.toLowerCase().includes(this.searchText.toLowerCase())
+      );
+    });
+    return filtered;
+  }
+
+  openModal(task: Task) {
+    this.modalTask = { ...task };
+    this.isEditing = false;
+  }
+
+  closeModal() {
+    this.modalTask = null;
+    this.isEditing = false;
+  }
 
   updateTask() {
     if (!this.modalTask) return;
-    const taskId = this.modalTask.id;
-    const updatedTask = { ...this.modalTask };
 
-    // Actualizar UI local
-    this.socket.updateTask(updatedTask);
-
-    // Persistir backend
-    fetch(`https://dsn-test-production.up.railway.app/tasks/${taskId}`, {
+    fetch(`https://dsn-test-production.up.railway.app/tasks/${this.modalTask.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: updatedTask.title, description: updatedTask.description }),
-    }).then(() => {
+      body: JSON.stringify({
+        title: this.modalTask.title,
+        description: this.modalTask.description,
+      }),
     });
 
     this.closeModal();
@@ -201,6 +254,7 @@ export class BoardComponent implements OnInit {
 
   confirmDelete() {
     if (!this.modalTask) return;
+
     Swal.fire({
       title: '¿Estás seguro?',
       text: '¡No podrás revertir esto!',
@@ -210,19 +264,20 @@ export class BoardComponent implements OnInit {
       cancelButtonColor: '#3085d6',
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-    }).then(result => {
-      if (result.isConfirmed) this.deleteTask();
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.deleteTask();
+      }
     });
   }
 
   deleteTask() {
     if (!this.modalTask) return;
-    const taskId = this.modalTask.id;
 
-    fetch(`https://dsn-test-production.up.railway.app/tasks/${taskId}`, { method: 'DELETE' })
-      .then(() => {
-        this.socket.removeTask(taskId);
-        this.closeModal();
-      });
+    fetch(`https://dsn-test-production.up.railway.app/tasks/${this.modalTask.id}`, {
+      method: 'DELETE',
+    });
+
+    this.closeModal();
   }
 }
