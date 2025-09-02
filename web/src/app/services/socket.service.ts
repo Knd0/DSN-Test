@@ -121,10 +121,14 @@ export class SocketService {
       );
       if (!res.ok) throw new Error('Error cargando tareas');
 
-      const board: Board = await res.json();
-      console.log('Board inicial recibido:', board);
+      const data: Task[] = await res.json();
+      console.log('Tareas iniciales recibidas:', data);
 
-      // asignar directo al signal
+      const board: Board = { todo: [], doing: [], done: [] };
+      data.forEach((task) => {
+        if (board[task.column]) board[task.column].push(task);
+      });
+
       this._board.set(board);
     } catch (err) {
       console.error('Error al cargar el board inicial', err);
