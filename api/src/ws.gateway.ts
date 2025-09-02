@@ -1,14 +1,15 @@
 import {
   OnGatewayConnection,
+  OnGatewayDisconnect,
   WebSocketGateway,
   WebSocketServer,
   SubscribeMessage,
   MessageBody,
   ConnectedSocket,
-  OnGatewayDisconnect,
+  
 } from '@nestjs/websockets';
+import {Injectable} from '@nestjs/common'
 import { Server, Socket } from 'socket.io';
-import { Injectable } from '@nestjs/common';
 import { Task } from './tasks/task.model';
 
 interface Board {
@@ -24,27 +25,50 @@ export class WsGateway
 {
   @WebSocketServer() server!: Server;
 
-  // <-- el board central en el servidor
+  // Board central en el servidor
   private board: Board = { todo: [], doing: [], done: [] };
 
+  /**
+   * Un cliente se conecta
+   */
   handleConnection(client: Socket) {
     console.log('Cliente conectado:', client.id);
-
-    // enviar el board actual al usuario que se conecta
+    // enviar snapshot completo al nuevo cliente
     client.emit('board:snapshot', this.board);
   }
 
+  /**
+   * Cliente desconectado
+   */
   handleDisconnect(client: Socket) {
     console.log('Cliente desconectado:', client.id);
   }
 
-  // recibir actualizaciones de los clientes
+  /**
+   * Recibe actualizaciones desde clientes
+   */
   @SubscribeMessage('board:update')
   handleUpdate(
-    @MessageBody()
-    event: { type: 'created' | 'moved' | 'updated' | 'deleted'; task: Task },
+    @MessageBody() event: { type: 'created' | 'moved' | 'updated' | 'deleted'; task: Task },
     @ConnectedSocket() client: Socket
   ) {
+    this.applyUpdate(event);
+    // emitir a todos los demás clientes
+    client.broadcast.emit('board:update', event);
+  }
+
+  /**
+   * Método público para emitir actualizaciones desde un Controller u otro servicio
+   */
+  public emitUpdate(event: { type: 'created' | 'moved' | 'updated' | 'deleted'; task: Task }) {
+    this.applyUpdate(event);
+    this.server.emit('board:update', event);
+  }
+
+  /**
+   * Actualiza el board central en memoria
+   */
+  private applyUpdate(event: { type: 'created' | 'moved' | 'updated' | 'deleted'; task: Task }) {
     const task = event.task;
 
     // eliminar de todas las columnas
@@ -52,12 +76,16 @@ export class WsGateway
       this.board[col] = this.board[col].filter((t) => t.id !== task.id);
     });
 
-    // si es created, moved o updated, agregar nuevamente
-    if (['created', 'moved', 'updated'].includes(event.type)) {
+    // si no es eliminado, agregar nuevamente
+    if (event.type !== 'deleted') {
       this.board[task.column].push(task);
     }
+  }
 
-    // emitir la actualización a todos excepto el que envió
-    client.broadcast.emit('board:update', event);
+  /**
+   * Permite que un controller obtenga el board actual
+   */
+  public getBoardSnapshot(): Board {
+    return this.board;
   }
 }
