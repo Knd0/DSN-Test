@@ -63,36 +63,31 @@ import type { Column, Task } from '../models/task.model';
           class="flex-1 p-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02]"
           [ngClass]="columnColors[col]"
         >
-          <div
-            class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2"
-          >
+          <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
             <h2 class="text-xl font-semibold capitalize tracking-wide">
               {{ col }}
             </h2>
             <span class="bg-gray-700 text-sm px-2 py-1 rounded-full">
-              {{ filteredBoard()[col]?.length || 0 }}
+              {{ filteredBoard[col]?.length || 0 }}
             </span>
           </div>
 
           <div
-            *ngIf="filteredBoard()[col]"
             cdkDropList
             [id]="col"
-            [cdkDropListData]="filteredBoard()[col]"
+            [cdkDropListData]="filteredBoard[col]"
             [cdkDropListConnectedTo]="getConnectedCols(col)"
             class="min-h-[150px] flex flex-col gap-3"
             (cdkDropListDropped)="drop($event, col)"
           >
             <div
-              *ngFor="let task of filteredBoard()[col]"
+              *ngFor="let task of filteredBoard[col]"
               cdkDrag
               class="bg-gray-700 p-3 rounded-lg shadow hover:bg-gray-600 transition flex justify-between items-center cursor-pointer"
               (click)="openModal(task)"
             >
               <div class="truncate max-w-[80%]">{{ task.title }}</div>
-              <span class="text-gray-400 text-xs">{{
-                task.createdAt | date : 'shortTime'
-              }}</span>
+              <span class="text-gray-400 text-xs">{{ task.createdAt | date:'shortTime' }}</span>
             </div>
           </div>
         </div>
@@ -104,9 +99,7 @@ import type { Column, Task } from '../models/task.model';
       *ngIf="modalTask"
       class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
     >
-      <div
-        class="bg-gray-800 rounded-2xl p-6 w-96 shadow-lg transform transition-transform duration-300 scale-100"
-      >
+      <div class="bg-gray-800 rounded-2xl p-6 w-96 shadow-lg transform transition-transform duration-300 scale-100">
         <h3 class="text-2xl font-bold mb-4">
           {{ isEditing ? 'Editar Tarea' : modalTask.title }}
         </h3>
@@ -188,6 +181,8 @@ export class BoardComponent implements OnInit {
   modalTask: Task | null = null;
   isEditing = false;
 
+  filteredBoard: Record<Column, Task[]> = { todo: [], doing: [], done: [] };
+
   columnColors: Record<Column, string> = {
     todo: 'bg-purple-800',
     doing: 'bg-yellow-800',
@@ -198,7 +193,20 @@ export class BoardComponent implements OnInit {
 
   async ngOnInit() {
     this.socket.connect();
-    await this.socket.fetchInitialBoard(); // carga desde la base de datos
+    await this.socket.fetchInitialBoard();
+    this.updateFilteredBoard();
+
+    // Suscribirse a cambios del board
+    setInterval(() => this.updateFilteredBoard(), 100);
+  }
+
+  updateFilteredBoard() {
+    const board = this.socket.board();
+    (['todo', 'doing', 'done'] as Column[]).forEach((col) => {
+      this.filteredBoard[col] = board[col].filter((task) =>
+        task.title.toLowerCase().includes(this.searchText.toLowerCase())
+      );
+    });
   }
 
   createTask() {
@@ -216,6 +224,7 @@ export class BoardComponent implements OnInit {
     this.socket.addTask(newTask);
     this.newTaskTitle = '';
     this.newTaskDescription = '';
+    this.updateFilteredBoard();
   }
 
   drop(event: CdkDragDrop<Task[]>, targetCol: Column) {
@@ -230,23 +239,14 @@ export class BoardComponent implements OnInit {
     );
 
     this.socket.moveTask(task.id, targetCol);
-  }
-
-  filteredBoard() {
-    const board = this.socket.board();
-    const filtered: Record<Column, Task[]> = { todo: [], doing: [], done: [] };
-    (['todo', 'doing', 'done'] as Column[]).forEach((col) => {
-      filtered[col] = board[col].filter((task) =>
-        task.title.toLowerCase().includes(this.searchText.toLowerCase())
-      );
-    });
-    return filtered;
+    this.updateFilteredBoard();
   }
 
   openModal(task: Task) {
     this.modalTask = { ...task };
     this.isEditing = false;
   }
+
   closeModal() {
     this.modalTask = null;
     this.isEditing = false;
@@ -256,6 +256,7 @@ export class BoardComponent implements OnInit {
     if (!this.modalTask) return;
     this.socket.updateTask(this.modalTask);
     this.closeModal();
+    this.updateFilteredBoard();
   }
 
   confirmDelete() {
@@ -278,6 +279,7 @@ export class BoardComponent implements OnInit {
     if (!this.modalTask) return;
     this.socket.removeTask(this.modalTask.id);
     this.closeModal();
+    this.updateFilteredBoard();
   }
 
   getConnectedCols(col: Column): string[] {

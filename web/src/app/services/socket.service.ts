@@ -55,7 +55,6 @@ export class SocketService {
         ) {
           current[task.column].push(task);
         }
-        // deleted: ya se eliminó de todas las columnas
 
         this._board.set(current);
       }
@@ -111,6 +110,10 @@ export class SocketService {
       task: { id: taskId } as Task,
     });
   }
+
+  // -------------------------------------
+  // Fetch inicial desde el backend (corregido)
+  // -------------------------------------
   async fetchInitialBoard() {
     try {
       const res = await fetch(
@@ -118,17 +121,10 @@ export class SocketService {
       );
       if (!res.ok) throw new Error('Error cargando tareas');
 
-      const data = await res.json();
-      console.log('Respuesta inicial del board:', data); // <- depuración
+      const board: Board = await res.json();
+      console.log('Board inicial recibido:', board);
 
-      // asegurarnos que sea un array
-      const tasks: Task[] = Array.isArray(data) ? data : [];
-
-      const board: Board = { todo: [], doing: [], done: [] };
-      tasks.forEach((task) => {
-        board[task.column].push(task);
-      });
-
+      // asignar directo al signal
       this._board.set(board);
     } catch (err) {
       console.error('Error al cargar el board inicial', err);
