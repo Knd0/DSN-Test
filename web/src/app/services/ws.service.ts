@@ -14,7 +14,7 @@ connected = signal(false);
 
 connect() {
 // Ajustá la URL si corrés el backend en otro host/puerto
-this.socket = io('http://localhost:3000', { transports: ['websocket'] });
+this.socket = io('https://www.dsn-test-production.up.railway.app/', { transports: ['websocket'] });
 
 
 this.socket.on('connect', () => this.connected.set(true));
