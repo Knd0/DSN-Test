@@ -28,9 +28,7 @@ export class SocketService {
     setTimeout(connectSocket, 2000);
   });
 
-  // ----------------------------
-  // snapshot inicial desde socket
-  // ----------------------------
+  // snapshot inicial: reemplaza fetchInitialBoard
   this.socket.on('board:snapshot', (board: Board) => {
     console.log('Board inicial recibido por socket:', board);
     this._board.set(board);
@@ -39,10 +37,7 @@ export class SocketService {
   // actualizaciones en tiempo real
   this.socket.on(
     'board:update',
-    (event: {
-      type: 'created' | 'moved' | 'updated' | 'deleted';
-      task: Task;
-    }) => {
+    (event: { type: 'created' | 'moved' | 'updated' | 'deleted'; task: Task }) => {
       const current = { ...this._board() };
       const task = event.task;
 
@@ -60,6 +55,7 @@ export class SocketService {
 
   connectSocket();
 }
+
 
   // métodos para manipular localmente y emitir
   addTask(task: Task) {
