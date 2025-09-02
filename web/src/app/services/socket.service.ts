@@ -13,55 +13,49 @@ export class SocketService {
   }
 
   connect() {
-    this.socket = io('https://dsn-test-production.up.railway.app', {
-      autoConnect: false,
-    });
+  this.socket = io('https://dsn-test-production.up.railway.app', {
+    autoConnect: false,
+  });
 
-    const connectSocket = () => this.socket.connect();
+  const connectSocket = () => this.socket.connect();
 
-    this.socket.on('connect', () =>
-      console.log('WS conectado', this.socket.id)
-    );
-    this.socket.on('disconnect', () => {
-      console.warn('WS desconectado, reintentando en 2s...');
-      setTimeout(connectSocket, 2000);
-    });
+  this.socket.on('connect', () =>
+    console.log('WS conectado', this.socket.id)
+  );
 
-    // snapshot inicial
-    this.socket.on('board:snapshot', (board: Board) => {
-      this._board.set(board);
-    });
+  this.socket.on('disconnect', () => {
+    console.warn('WS desconectado, reintentando en 2s...');
+    setTimeout(connectSocket, 2000);
+  });
 
-    // actualizaciones en tiempo real
-    this.socket.on(
-      'board:update',
-      (event: {
-        type: 'created' | 'moved' | 'updated' | 'deleted';
-        task: Task;
-      }) => {
-        const current = { ...this._board() };
-        const task = event.task;
+  // snapshot inicial: reemplaza fetchInitialBoard
+  this.socket.on('board:snapshot', (board: Board) => {
+    console.log('Board inicial recibido por socket:', board);
+    this._board.set(board);
+  });
 
-        // eliminar de todas las columnas
-        (['todo', 'doing', 'done'] as Column[]).forEach((col) => {
-          current[col] = current[col].filter((t) => t.id !== task.id);
-        });
+  // actualizaciones en tiempo real
+  this.socket.on(
+    'board:update',
+    (event: { type: 'created' | 'moved' | 'updated' | 'deleted'; task: Task }) => {
+      const current = { ...this._board() };
+      const task = event.task;
 
-        // dependiendo del evento, actualizar
-        if (
-          event.type === 'created' ||
-          event.type === 'moved' ||
-          event.type === 'updated'
-        ) {
-          current[task.column].push(task);
-        }
+      (['todo', 'doing', 'done'] as Column[]).forEach((col) => {
+        current[col] = current[col].filter((t) => t.id !== task.id);
+      });
 
-        this._board.set(current);
+      if (['created', 'moved', 'updated'].includes(event.type)) {
+        current[task.column].push(task);
       }
-    );
 
-    connectSocket();
-  }
+      this._board.set(current);
+    }
+  );
+
+  connectSocket();
+}
+
 
   // métodos para manipular localmente y emitir
   addTask(task: Task) {
@@ -115,23 +109,20 @@ export class SocketService {
   // Fetch inicial desde el backend (corregido)
   // -------------------------------------
   async fetchInitialBoard() {
-    try {
-      const res = await fetch(
-        'https://dsn-test-production.up.railway.app/tasks/board'
-      );
-      if (!res.ok) throw new Error('Error cargando tareas');
+  try {
+    const res = await fetch(
+      'https://dsn-test-production.up.railway.app/tasks/board'
+    );
+    if (!res.ok) throw new Error('Error cargando tareas');
 
-      const data: Task[] = await res.json();
-      console.log('Tareas iniciales recibidas:', data);
+    // ahora recibimos un Board completo
+    const board: Board = await res.json();
+    console.log('Board inicial recibido:', board);
 
-      const board: Board = { todo: [], doing: [], done: [] };
-      data.forEach((task) => {
-        if (board[task.column]) board[task.column].push(task);
-      });
-
-      this._board.set(board);
-    } catch (err) {
-      console.error('Error al cargar el board inicial', err);
-    }
+    // asignar directamente al signal
+    this._board.set(board);
+  } catch (err) {
+    console.error('Error al cargar el board inicial', err);
   }
+}
 }
