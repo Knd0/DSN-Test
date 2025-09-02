@@ -84,7 +84,7 @@ import type { Column, Task } from '../models/task.model';
       </div>
     </div>
 
-    <!-- Modal Profesional -->
+    <!-- Modal -->
     <div *ngIf="modalTask" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div class="bg-gray-800 rounded-2xl p-6 w-96 shadow-lg transform transition-transform duration-300 scale-100">
         <h3 class="text-2xl font-bold mb-4">{{ isEditing ? 'Editar Tarea' : modalTask.title }}</h3>
@@ -92,11 +92,7 @@ import type { Column, Task } from '../models/task.model';
         <p *ngIf="!isEditing" class="mb-4 text-gray-300">{{ modalTask.description || 'Sin descripción' }}</p>
 
         <div *ngIf="isEditing" class="flex flex-col gap-2">
-          <input
-            type="text"
-            [(ngModel)]="modalTask.title"
-            class="p-2 rounded text-black w-full"
-          />
+          <input type="text" [(ngModel)]="modalTask.title" class="p-2 rounded text-black w-full" />
           <textarea
             [(ngModel)]="modalTask.description"
             rows="4"
@@ -106,30 +102,16 @@ import type { Column, Task } from '../models/task.model';
         </div>
 
         <div class="flex justify-end gap-2 mt-4">
-          <button
-            *ngIf="!isEditing"
-            class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
-            (click)="isEditing = true"
-          >
+          <button *ngIf="!isEditing" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700" (click)="isEditing = true">
             Editar
           </button>
-          <button
-            *ngIf="isEditing"
-            class="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
-            (click)="updateTask()"
-          >
+          <button *ngIf="isEditing" class="bg-green-600 px-4 py-2 rounded hover:bg-green-700" (click)="updateTask()">
             Guardar
           </button>
-          <button
-            class="bg-red-600 px-4 py-2 rounded hover:bg-red-700"
-            (click)="confirmDelete()"
-          >
+          <button class="bg-red-600 px-4 py-2 rounded hover:bg-red-700" (click)="confirmDelete()">
             Eliminar
           </button>
-          <button
-            class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700"
-            (click)="closeModal()"
-          >
+          <button class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700" (click)="closeModal()">
             Cerrar
           </button>
         </div>
@@ -138,21 +120,10 @@ import type { Column, Task } from '../models/task.model';
   `,
   styles: [
     `
-      .cdk-drag-preview {
-        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        border-radius: 0.75rem;
-        transform: rotate(2deg);
-      }
-      .cdk-drag-placeholder {
-        opacity: 0.3;
-      }
-      .cdk-drag {
-        transition: transform 0.3s ease;
-      }
-      .cdk-drop-list-dragging {
-        background-color: rgba(255, 255, 255, 0.05);
-        transition: background-color 0.2s ease;
-      }
+      .cdk-drag-preview { box-shadow: 0 5px 15px rgba(0,0,0,0.5); border-radius: 0.75rem; transform: rotate(2deg); }
+      .cdk-drag-placeholder { opacity: 0.3; }
+      .cdk-drag { transition: transform 0.3s ease; }
+      .cdk-drop-list-dragging { background-color: rgba(255, 255, 255, 0.05); transition: background-color 0.2s ease; }
     `,
   ],
 })
@@ -173,21 +144,23 @@ export class BoardComponent implements OnInit {
   constructor(public socket: SocketService) {}
 
   ngOnInit() {
+    // conectar al socket y recibir snapshot inicial
     this.socket.connect();
   }
 
   createTask() {
     if (!this.newTaskTitle.trim()) return;
 
-    fetch('https://dsn-test-production.up.railway.app/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: this.newTaskTitle,
-        description: this.newTaskDescription,
-      }),
-    });
+    const newTask: Task = {
+      id: crypto.randomUUID(),
+      title: this.newTaskTitle,
+      description: this.newTaskDescription,
+      column: 'todo',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
 
+    this.socket.addTask(newTask);
     this.newTaskTitle = '';
     this.newTaskDescription = '';
   }
@@ -196,7 +169,6 @@ export class BoardComponent implements OnInit {
     const task = event.previousContainer.data[event.previousIndex];
     if (task.column === targetCol) return;
 
-    // UI: movemos visualmente en la lista local
     transferArrayItem(
       event.previousContainer.data,
       event.container.data,
@@ -204,16 +176,7 @@ export class BoardComponent implements OnInit {
       event.currentIndex
     );
 
-    // backend: el socket se encargará de actualizar a todos
-    fetch(`https://dsn-test-production.up.railway.app/tasks/${task.id}/move`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ column: targetCol }),
-    });
-  }
-
-  getConnectedCols(col: Column): string[] {
-    return this.columns.filter(c => c !== col);
+    this.socket.moveTask(task.id, targetCol);
   }
 
   filteredBoard() {
@@ -227,34 +190,17 @@ export class BoardComponent implements OnInit {
     return filtered;
   }
 
-  openModal(task: Task) {
-    this.modalTask = { ...task };
-    this.isEditing = false;
-  }
-
-  closeModal() {
-    this.modalTask = null;
-    this.isEditing = false;
-  }
+  openModal(task: Task) { this.modalTask = { ...task }; this.isEditing = false; }
+  closeModal() { this.modalTask = null; this.isEditing = false; }
 
   updateTask() {
     if (!this.modalTask) return;
-
-    fetch(`https://dsn-test-production.up.railway.app/tasks/${this.modalTask.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: this.modalTask.title,
-        description: this.modalTask.description,
-      }),
-    });
-
+    this.socket.updateTask(this.modalTask);
     this.closeModal();
   }
 
   confirmDelete() {
     if (!this.modalTask) return;
-
     Swal.fire({
       title: '¿Estás seguro?',
       text: '¡No podrás revertir esto!',
@@ -265,19 +211,17 @@ export class BoardComponent implements OnInit {
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
     }).then((result) => {
-      if (result.isConfirmed) {
-        this.deleteTask();
-      }
+      if (result.isConfirmed) this.deleteTask();
     });
   }
 
   deleteTask() {
     if (!this.modalTask) return;
-
-    fetch(`https://dsn-test-production.up.railway.app/tasks/${this.modalTask.id}`, {
-      method: 'DELETE',
-    });
-
+    this.socket.removeTask(this.modalTask.id);
     this.closeModal();
+  }
+
+  getConnectedCols(col: Column): string[] {
+    return this.columns.filter(c => c !== col);
   }
 }
