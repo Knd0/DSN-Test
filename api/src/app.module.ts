@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TasksModule } from './tasks/tasks.module';
 import { TaskEntity } from './tasks/task.entity';
+import { KeycloakModule } from './keycloak.module';
 
 @Module({
   imports: [
+    KeycloakModule,
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,

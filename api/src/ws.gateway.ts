@@ -7,11 +7,13 @@ import {
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
+import { UseGuards } from '@nestjs/common';
 import { OnModuleInit } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { Task } from './tasks/task.model'; // o TaskEntity según uses en frontend
 import { TasksService } from './tasks/tasks.service';
+import { WsJwtGuard } from './ws-jwt.guard';
 
 interface Board {
   todo: Task[];
@@ -20,6 +22,7 @@ interface Board {
 }
 
 @Injectable()
+@UseGuards(WsJwtGuard)
 @WebSocketGateway({ cors: { origin: '*' } })
 export class WsGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit

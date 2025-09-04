@@ -6,6 +6,7 @@ import {
   Patch,
   Post,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -13,20 +14,26 @@ import { MoveTaskDto } from './dto/move-task.dto';
 import { WsGateway } from '../ws.gateway';
 import type { Task } from './task.model';
 import type { TaskEntity } from './task.entity';
+import { Roles, Resource, RoleMatchingMode, RoleGuard, AuthGuard } from 'nest-keycloak-connect';
 
 @Controller('tasks')
+@Resource('tasks') // nombre del recurso en Keycloak
+@UseGuards(AuthGuard, RoleGuard) // activa autenticación y roles
 export class TasksController {
   constructor(
     private readonly tasks: TasksService,
     private readonly ws: WsGateway,
   ) {}
 
+  // Solo usuarios con rol "user" pueden acceder
   @Get('/board')
+  @Roles({ roles: ['user'], mode: RoleMatchingMode.ANY })
   async getBoard() {
     return this.tasks.findBoard();
   }
 
   @Post()
+  @Roles({ roles: ['user'], mode: RoleMatchingMode.ANY })
   async create(@Body() dto: CreateTaskDto) {
     const entity: TaskEntity = await this.tasks.create(dto);
     const task: Task = this.mapEntityToTask(entity);
@@ -35,6 +42,7 @@ export class TasksController {
   }
 
   @Patch(':id/move')
+  @Roles({ roles: ['user'], mode: RoleMatchingMode.ANY })
   async move(@Param('id') id: string, @Body() dto: MoveTaskDto) {
     const entity: TaskEntity = await this.tasks.move(id, dto);
     const task: Task = this.mapEntityToTask(entity);
@@ -43,6 +51,7 @@ export class TasksController {
   }
 
   @Patch(':id')
+  @Roles({ roles: ['user'], mode: RoleMatchingMode.ANY })
   async update(@Param('id') id: string, @Body() dto: Partial<CreateTaskDto>) {
     const entity: TaskEntity = await this.tasks.update(id, dto);
     const task: Task = this.mapEntityToTask(entity);
@@ -51,6 +60,7 @@ export class TasksController {
   }
 
   @Delete(':id')
+  @Roles({ roles: ['user'], mode: RoleMatchingMode.ANY })
   async delete(@Param('id') id: string) {
     const entity: TaskEntity = await this.tasks.delete(id);
     const task: Task = this.mapEntityToTask(entity);
@@ -58,9 +68,6 @@ export class TasksController {
     return task;
   }
 
-  // -------------------------
-  // Helper: mapear TaskEntity a Task plano
-  // -------------------------
   private mapEntityToTask(entity: TaskEntity): Task {
     return {
       id: entity.id,
