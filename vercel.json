@@ -2,13 +2,13 @@
   "version": 2,
   "builds": [
     {
-      "src": "web/angular.json",
+      "src": "angular.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "web/dist/web" }
+      "config": { "distDir": "dist/web/browser" }
     }
   ],
   "routes": [
     { "handle": "filesystem" },
-    { "src": "/.*", "dest": "web/dist/web/index.html" }
+    { "src": "/.*", "dest": "dist/web/browser/index.html" }
   ]
 }
