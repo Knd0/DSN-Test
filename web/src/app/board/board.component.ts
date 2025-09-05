@@ -15,167 +15,131 @@ import type { Column, Task } from '../models/task.model';
   standalone: true,
   imports: [CommonModule, FormsModule, DragDropModule],
   template: `
-    <div class="p-4 bg-gray-900 min-h-screen text-white">
-      <h1 class="text-3xl font-bold mb-6 text-center tracking-wide">
-        DSN Kanban
-      </h1>
+  <!-- Asegurate de incluir FontAwesome en index.html -->
+  <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" /> -->
 
-      <!-- Buscar -->
+  <div class="p-6 bg-gradient-to-br from-gray-900 via-gray-800 to-black min-h-screen text-white">
+
+    <!-- Header -->
+    <h1 class="text-4xl font-extrabold mb-8 text-center tracking-wide bg-gradient-to-r from-indigo-400 to-purple-500 bg-clip-text text-transparent">
+      DSN Kanban
+    </h1>
+
+    <!-- Buscar -->
+    <div class="flex justify-center mb-8">
+      <div class="relative w-full md:w-1/3">
+        <input
+          type="text"
+          [(ngModel)]="searchText"
+          placeholder="Buscar tareas..."
+          class="pl-10 pr-4 py-3 w-full rounded-xl text-gray-900 border border-gray-700 shadow focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-gray-400"></i>
+      </div>
+    </div>
+
+    <!-- Crear nueva tarea -->
+    <form (ngSubmit)="createTask()" class="mb-10 flex justify-center gap-3 flex-wrap">
       <input
         type="text"
-        [(ngModel)]="searchText"
-        placeholder="Buscar tareas..."
-        class="mb-6 p-3 w-full md:w-1/3 rounded text-black border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        [(ngModel)]="newTaskTitle"
+        name="title"
+        placeholder="Título de la tarea..."
+        class="p-3 rounded-xl w-64 text-gray-900 border border-gray-700 shadow focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        required
       />
+      <input
+        type="text"
+        [(ngModel)]="newTaskDescription"
+        name="description"
+        placeholder="Descripción..."
+        class="p-3 rounded-xl w-64 text-gray-900 border border-gray-700 shadow focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      />
+      <button type="submit" class="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-3 rounded-xl hover:opacity-90 transition shadow-lg">
+        <i class="fa-solid fa-plus"></i>
+        Agregar
+      </button>
+    </form>
 
-      <!-- Crear nueva tarea -->
-      <form
-        (ngSubmit)="createTask()"
-        class="mb-6 flex justify-center gap-2 flex-wrap"
-      >
-        <input
-          type="text"
-          [(ngModel)]="newTaskTitle"
-          name="title"
-          placeholder="Título de la tarea..."
-          class="p-3 rounded w-64 text-black border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
-        <input
-          type="text"
-          [(ngModel)]="newTaskDescription"
-          name="description"
-          placeholder="Descripción..."
-          class="p-3 rounded w-64 text-black border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <button
-          type="submit"
-          class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700 transition-shadow shadow-md"
-        >
-          Agregar
+    <!-- Tablero -->
+    <div class="flex gap-6 flex-wrap md:flex-nowrap">
+      <div *ngFor="let col of columns" class="flex-1 bg-gray-800/80 backdrop-blur-sm p-4 rounded-2xl shadow-xl transition-transform hover:scale-[1.02]">
+        <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+          <h2 class="text-lg font-bold capitalize tracking-wide">{{ col }}</h2>
+          <span class="bg-gray-700 text-sm px-2 py-1 rounded-full shadow">{{ filteredBoard[col]?.length || 0 }}</span>
+        </div>
+
+        <div *ngIf="filteredBoard[col]"
+          cdkDropList
+          [id]="col"
+          [cdkDropListData]="filteredBoard[col]"
+          [cdkDropListConnectedTo]="getConnectedCols(col)"
+          class="min-h-[200px] flex flex-col gap-3"
+          (cdkDropListDropped)="drop($event, col)">
+          <div *ngFor="let task of filteredBoard[col]" cdkDrag
+            class="bg-gray-700/90 p-4 rounded-xl shadow-md hover:bg-gray-600/90 transition cursor-pointer flex justify-between items-center group"
+            (click)="openModal(task)">
+            <div class="truncate max-w-[80%] font-medium">{{ task.title }}</div>
+            <span class="text-gray-400 text-xs group-hover:text-indigo-300 transition">{{ task.createdAt | date : 'shortTime' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div *ngIf="modalTask" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex justify-center items-center z-50">
+    <div class="bg-gray-800 rounded-2xl p-6 w-96 shadow-2xl transform transition-all duration-300 scale-100 border border-gray-700">
+      <h3 class="text-2xl font-bold mb-4 text-indigo-400">{{ isEditing ? 'Editar Tarea' : modalTask.title }}</h3>
+
+      <p *ngIf="!isEditing" class="mb-4 text-gray-300">{{ modalTask.description || 'Sin descripción' }}</p>
+
+      <div *ngIf="isEditing" class="flex flex-col gap-3">
+        <input type="text" [(ngModel)]="modalTask.title"
+          class="p-3 rounded-xl text-gray-900 w-full focus:ring-2 focus:ring-indigo-500" />
+        <textarea [(ngModel)]="modalTask.description" rows="4"
+          class="p-3 rounded-xl text-gray-900 w-full focus:ring-2 focus:ring-indigo-500"
+          placeholder="Descripción"></textarea>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-6">
+        <button *ngIf="!isEditing" class="flex items-center gap-1 bg-indigo-600 px-4 py-2 rounded-xl hover:bg-indigo-700 transition" (click)="isEditing = true">
+          <i class="fa-solid fa-pencil"></i>
+          Editar
         </button>
-      </form>
-
-      <!-- Tablero -->
-      <div class="flex gap-6 flex-wrap md:flex-nowrap">
-        <div
-          *ngFor="let col of columns"
-          class="flex-1 p-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02]"
-          [ngClass]="columnColors[col]"
-        >
-          <div
-            class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2"
-          >
-            <h2 class="text-xl font-semibold capitalize tracking-wide">
-              {{ col }}
-            </h2>
-            <span class="bg-gray-700 text-sm px-2 py-1 rounded-full">
-              {{ filteredBoard[col]?.length || 0 }}
-            </span>
-          </div>
-
-          <div
-            *ngIf="filteredBoard[col]"
-            cdkDropList
-            [id]="col"
-            [cdkDropListData]="filteredBoard[col]"
-            [cdkDropListConnectedTo]="getConnectedCols(col)"
-            class="min-h-[150px] flex flex-col gap-3"
-            (cdkDropListDropped)="drop($event, col)"
-          >
-            <div
-              *ngFor="let task of filteredBoard[col]"
-              cdkDrag
-              class="bg-gray-700 p-3 rounded-lg shadow hover:bg-gray-600 transition flex justify-between items-center cursor-pointer"
-              (click)="openModal(task)"
-            >
-              <div class="truncate max-w-[80%]">{{ task.title }}</div>
-              <span class="text-gray-400 text-xs">{{
-                task.createdAt | date : 'shortTime'
-              }}</span>
-            </div>
-          </div>
-        </div>
+        <button *ngIf="isEditing" class="flex items-center gap-1 bg-green-600 px-4 py-2 rounded-xl hover:bg-green-700 transition" (click)="updateTask()">
+          <i class="fa-solid fa-check"></i>
+          Guardar
+        </button>
+        <button class="flex items-center gap-1 bg-red-600 px-4 py-2 rounded-xl hover:bg-red-700 transition" (click)="confirmDelete()">
+          <i class="fa-solid fa-trash"></i>
+          Eliminar
+        </button>
+        <button class="flex items-center gap-1 bg-gray-600 px-4 py-2 rounded-xl hover:bg-gray-700 transition" (click)="closeModal()">
+          <i class="fa-solid fa-x"></i>
+          Cerrar
+        </button>
       </div>
     </div>
-
-    <!-- Modal -->
-    <div
-      *ngIf="modalTask"
-      class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
-    >
-      <div
-        class="bg-gray-800 rounded-2xl p-6 w-96 shadow-lg transform transition-transform duration-300 scale-100"
-      >
-        <h3 class="text-2xl font-bold mb-4">
-          {{ isEditing ? 'Editar Tarea' : modalTask.title }}
-        </h3>
-
-        <p *ngIf="!isEditing" class="mb-4 text-gray-300">
-          {{ modalTask.description || 'Sin descripción' }}
-        </p>
-
-        <div *ngIf="isEditing" class="flex flex-col gap-2">
-          <input
-            type="text"
-            [(ngModel)]="modalTask.title"
-            class="p-2 rounded text-black w-full"
-          />
-          <textarea
-            [(ngModel)]="modalTask.description"
-            rows="4"
-            class="p-2 rounded text-black w-full"
-            placeholder="Descripción"
-          ></textarea>
-        </div>
-
-        <div class="flex justify-end gap-2 mt-4">
-          <button
-            *ngIf="!isEditing"
-            class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
-            (click)="isEditing = true"
-          >
-            Editar
-          </button>
-          <button
-            *ngIf="isEditing"
-            class="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
-            (click)="updateTask()"
-          >
-            Guardar
-          </button>
-          <button
-            class="bg-red-600 px-4 py-2 rounded hover:bg-red-700"
-            (click)="confirmDelete()"
-          >
-            Eliminar
-          </button>
-          <button
-            class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700"
-            (click)="closeModal()"
-          >
-            Cerrar
-          </button>
-        </div>
-      </div>
-    </div>
+  </div>
   `,
   styles: [
     `
       .cdk-drag-preview {
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-        border-radius: 0.75rem;
-        transform: rotate(2deg);
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.6);
+        border-radius: 1rem;
+        transform: rotate(2deg) scale(1.05);
       }
       .cdk-drag-placeholder {
-        opacity: 0.3;
+        opacity: 0.2;
       }
       .cdk-drag {
-        transition: transform 0.3s ease;
+        transition: transform 0.2s ease;
       }
       .cdk-drop-list-dragging {
         background-color: rgba(255, 255, 255, 0.05);
         transition: background-color 0.2s ease;
+        border-radius: 0.75rem;
       }
     `,
   ],
@@ -188,19 +152,11 @@ export class BoardComponent implements OnInit {
   modalTask: Task | null = null;
   isEditing = false;
 
-  columnColors: Record<Column, string> = {
-    todo: 'bg-purple-800',
-    doing: 'bg-yellow-800',
-    done: 'bg-green-800',
-  };
-
   constructor(public socket: SocketService) {}
 
   async ngOnInit() {
-  this.socket.connect();
-  // ❌ no llamamos más a fetchInitialBoard
-}
-
+    this.socket.connect();
+  }
 
   get filteredBoard(): Record<Column, Task[]> {
     const board = this.socket.board();
@@ -215,7 +171,6 @@ export class BoardComponent implements OnInit {
 
   createTask() {
     if (!this.newTaskTitle.trim()) return;
-
     const newTask: Task = {
       id: crypto.randomUUID(),
       title: this.newTaskTitle,
@@ -224,7 +179,6 @@ export class BoardComponent implements OnInit {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-
     this.socket.addTask(newTask);
     this.newTaskTitle = '';
     this.newTaskDescription = '';
