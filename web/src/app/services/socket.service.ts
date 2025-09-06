@@ -2,42 +2,39 @@ import { Injectable, signal } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
 import type { Column, Task } from '../models/task.model';
 import type { Board } from '../models/board.model';
+import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class SocketService {
   socket!: Socket;
   private _board = signal<Board>({ todo: [], doing: [], done: [] });
 
+  constructor(private auth: AuthService) {}
+
   board() {
     return this._board();
   }
 
   connect() {
-  this.socket = io('https://dsn-test-production.up.railway.app', {
-    autoConnect: false,
-  });
+    const token = this.auth.token();
+    if (!token) return;
 
-  const connectSocket = () => this.socket.connect();
+    this.socket = io('https://dsn-test-production.up.railway.app', {
+      auth: { token },
+      autoConnect: false,
+    });
 
-  this.socket.on('connect', () =>
-    console.log('WS conectado', this.socket.id)
-  );
+    const connectSocket = () => this.socket.connect();
 
-  this.socket.on('disconnect', () => {
-    console.warn('WS desconectado, reintentando en 2s...');
-    setTimeout(connectSocket, 2000);
-  });
+    this.socket.on('connect', () => console.log('WS conectado', this.socket.id));
+    this.socket.on('disconnect', () => {
+      console.warn('WS desconectado, reintentando en 2s...');
+      setTimeout(connectSocket, 2000);
+    });
 
-  // snapshot inicial: reemplaza fetchInitialBoard
-  this.socket.on('board:snapshot', (board: Board) => {
-    console.log('Board inicial recibido por socket:', board);
-    this._board.set(board);
-  });
+    this.socket.on('board:snapshot', (board: Board) => this._board.set(board));
 
-  // actualizaciones en tiempo real
-  this.socket.on(
-    'board:update',
-    (event: { type: 'created' | 'moved' | 'updated' | 'deleted'; task: Task }) => {
+    this.socket.on('board:update', (event: { type: 'created' | 'moved' | 'updated' | 'deleted'; task: Task }) => {
       const current = { ...this._board() };
       const task = event.task;
 
@@ -50,11 +47,10 @@ export class SocketService {
       }
 
       this._board.set(current);
-    }
-  );
+    });
 
-  connectSocket();
-}
+    connectSocket();
+  }
 
 
   // métodos para manipular localmente y emitir

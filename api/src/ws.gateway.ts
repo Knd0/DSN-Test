@@ -10,8 +10,10 @@ import {
 import { OnModuleInit } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { Task } from './tasks/task.model'; // o TaskEntity según uses en frontend
+import { Task } from './tasks/task.model';
 import { TasksService } from './tasks/tasks.service';
+import type { TaskEntity } from './tasks/task.entity';
+import type { UserEntity } from './users/user.entity';
 
 interface Board {
   todo: Task[];
@@ -30,21 +32,40 @@ export class WsGateway
 
   constructor(private readonly tasksService: TasksService) {}
 
+  // -------------------------
+  // Helper: mapear UserEntity a {id, username}
+  // -------------------------
+  private mapUser(user?: UserEntity): { id: string; username: string } | undefined {
+    return user ? { id: user.id, username: user.name } : undefined;
+  }
+
   // Cargar board desde la DB al iniciar
   async onModuleInit() {
-  try {
-    const boardEntities = await this.tasksService.findBoard();
-    // mapear a Task con fechas en string
-    this.board = {
-      todo: boardEntities.todo.map(t => ({ ...t, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() })),
-      doing: boardEntities.doing.map(t => ({ ...t, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() })),
-      done: boardEntities.done.map(t => ({ ...t, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() })),
-    };
-    console.log('Board cargado desde DB:', this.board);
-  } catch (err) {
-    console.error('Error cargando board inicial:', err);
+    try {
+      const boardEntities = await this.tasksService.findBoard();
+      const mapTask = (t: TaskEntity): Task => ({
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        column: t.column,
+        storyPoints: t.storyPoints,
+        createdBy: this.mapUser(t.createdBy),
+        assignedTo: this.mapUser(t.assignedTo),
+        createdAt: t.createdAt.toISOString(),
+        updatedAt: t.updatedAt.toISOString(),
+      });
+
+      this.board = {
+        todo: boardEntities.todo.map(mapTask),
+        doing: boardEntities.doing.map(mapTask),
+        done: boardEntities.done.map(mapTask),
+      };
+
+      console.log('Board cargado desde DB:', this.board);
+    } catch (err) {
+      console.error('Error cargando board inicial:', err);
+    }
   }
-}
 
   handleConnection(client: Socket) {
     console.log('Cliente conectado:', client.id);
