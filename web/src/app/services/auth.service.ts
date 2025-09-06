@@ -4,44 +4,84 @@ import { Injectable, signal } from '@angular/core';
 export interface User {
   id: string;
   username: string;
+  email?: string;
 }
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  user = signal<User | null>(null);
-  token = signal<string | null>(localStorage.getItem('token'));
+  private _userKey = 'dsn_user';
+  private _tokenKey = 'dsn_token';
 
-  get isLoggedIn() {
-    return !!this.user();
+  // señal para estado global del usuario
+  private _user = signal<User | null>(
+    JSON.parse(localStorage.getItem(this._userKey) ?? 'null')
+  );
+  private _token = signal<string | null>(localStorage.getItem(this._tokenKey));
+
+  user() {
+    return this._user();
   }
 
-  async login(username: string, password: string) {
-    try {
-      const res = await fetch('https://dsn-test-production.up.railway.app/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
+  token() {
+    return this._token();
+  }
 
-      if (!res.ok) throw new Error('Login fallido');
+  // web/src/app/services/auth.service.ts
+  async register(
+    username: string,
+    email: string,
+    password: string
+  ): Promise<boolean> {
+    try {
+      const res = await fetch(
+        'https://dsn-test-production.up.railway.app/auth/register',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password }),
+        }
+      );
+      return res.ok;
+    } catch (err) {
+      console.error('Error registrando usuario', err);
+      return false;
+    }
+  }
+
+  async login(username: string, password: string): Promise<boolean> {
+    try {
+      const res = await fetch(
+        'https://dsn-test-production.up.railway.app/auth/login',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        }
+      );
+
+      if (!res.ok) return false;
+
       const data = await res.json();
-      this.setUser(data.user, data.token);
+      const user: User = data.user;
+      const token: string = data.token;
+
+      this._user.set(user);
+      this._token.set(token);
+
+      localStorage.setItem(this._userKey, JSON.stringify(user));
+      localStorage.setItem(this._tokenKey, token);
+
       return true;
     } catch (err) {
-      console.error(err);
+      console.error('Login error', err);
       return false;
     }
   }
 
   logout() {
-    this.user.set(null);
-    this.token.set(null);
-    localStorage.removeItem('token');
-  }
-
-  setUser(user: User, token: string) {
-    this.user.set(user);
-    this.token.set(token);
-    localStorage.setItem('token', token);
+    this._user.set(null);
+    this._token.set(null);
+    localStorage.removeItem(this._userKey);
+    localStorage.removeItem(this._tokenKey);
   }
 }
