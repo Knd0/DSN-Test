@@ -23,16 +23,15 @@ export class TasksService {
   }
 
   async create(dto: CreateTaskDto): Promise<TaskEntity> {
-  const task = this.taskRepo.create({
-    title: dto.title,
-    description: dto.description,
-    column: Column.TODO,       // enum o string
-    storyPoints: dto.storyPoints ?? 1,
-  });
+    const task = this.taskRepo.create({
+      title: dto.title,
+      description: dto.description,
+      column: Column.TODO,
+      storyPoints: dto.storyPoints ?? 1,
+    });
 
-  return this.taskRepo.save(task);
-}
-
+    return this.taskRepo.save(task);
+  }
 
   async move(id: string, dto: MoveTaskDto) {
     const task = await this.taskRepo.findOne({ where: { id } });

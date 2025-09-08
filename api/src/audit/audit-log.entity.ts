@@ -1,4 +1,3 @@
-// audit-log.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
 @Entity()
@@ -18,7 +17,6 @@ export class AuditLog {
   @Column({ type: 'json', nullable: true })
   newState?: any;
 
-  
   @CreateDateColumn()
   timestamp: Date;
 }

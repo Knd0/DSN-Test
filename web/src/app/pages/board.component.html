@@ -34,7 +34,6 @@
   <div *ngIf="modalTask" class="modal-backdrop">
     <div class="modal">
       <h3 class="text-2xl font-bold mb-4 text-indigo-400">{{ isEditing ? 'Editar Tarea' : modalTask.title }}</h3>
-
       <p *ngIf="!isEditing" class="mb-4 text-gray-300">{{ modalTask.description || 'Sin descripción' }}</p>
 
       <div *ngIf="isEditing" class="flex flex-col gap-3">
@@ -50,17 +49,17 @@
       </div>
     </div>
   </div>
-  <!-- Auditoría -->
-<div class="mt-10 bg-gray-800/70 p-4 rounded-2xl shadow-xl max-h-64 overflow-y-auto">
-  <h3 class="text-lg font-bold mb-2 text-indigo-400">Auditoría de cambios</h3>
-  <ul>
-    <li *ngFor="let evt of socket.auditLog()" class="mb-1 text-gray-300 text-sm">
-      [{{ evt.timestamp | date:'shortTime' }}] Tarea 
-      "<span class="text-indigo-300">{{ evt.task.title }}</span>" 
-      {{ evt.type }}
-      <span *ngIf="evt.type==='moved'">a {{ evt.task.column }}</span>
-    </li>
-  </ul>
-</div>
 
+  <!-- Auditoría -->
+  <div class="mt-10 bg-gray-800/70 p-4 rounded-2xl shadow-xl max-h-64 overflow-y-auto">
+    <h3 class="text-lg font-bold mb-2 text-indigo-400">Auditoría de cambios</h3>
+    <ul>
+      <li *ngFor="let evt of socket.auditLog()" class="mb-1 text-gray-300 text-sm">
+        [{{ evt.timestamp | date:'shortTime' }}] Tarea 
+        "<span class="text-indigo-300">{{ evt.task.title }}</span>" 
+        {{ evt.type }}
+        <span *ngIf="evt.type==='moved'">a {{ evt.task.column }}</span>
+      </li>
+    </ul>
+  </div>
 </div>

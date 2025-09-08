@@ -26,6 +26,7 @@ export class BoardComponent implements OnInit {
 
   ngOnInit() {
     this.socket.connect();
+    this.socket.fetchInitialData(); // carga board + auditoría
   }
 
   get filteredBoard(): Record<Column, Task[]> {
