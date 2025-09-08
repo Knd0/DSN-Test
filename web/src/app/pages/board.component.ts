@@ -17,16 +17,19 @@ export class BoardComponent implements OnInit {
   columns: Column[] = ['todo', 'doing', 'done'];
   newTaskTitle = '';
   newTaskDescription = '';
-  newTaskStorypoints = 0;
+  newTaskstoryPoints = 0;
   searchText = '';
   modalTask: Task | null = null;
   isEditing = false;
 
+  taskTitles: Record<string, string> = {};
+
   constructor(public socket: SocketService) {}
+  
 
   ngOnInit() {
     this.socket.connect();
-    this.socket.fetchInitialData(); // carga board + auditoría
+    this.socket.fetchInitialData().then(() => this.loadAllTitles());
   }
 
   get filteredBoard(): Record<Column, Task[]> {
@@ -34,10 +37,24 @@ export class BoardComponent implements OnInit {
     const filtered: Record<Column, Task[]> = { todo: [], doing: [], done: [] };
     this.columns.forEach((col) => {
       filtered[col] = board[col].filter((task) =>
-        task.title.toLowerCase().includes(this.searchText.toLowerCase())
+        task?.title?.toLowerCase().includes(this.searchText.toLowerCase())
       );
     });
     return filtered;
+  }
+
+  async loadAllTitles() {
+    const allEvents = this.socket.auditLog();
+    for (const evt of allEvents) {
+      const taskId = evt.task.id;
+      if (!this.taskTitles[taskId]) {
+        this.taskTitles[taskId] = evt.task.title;
+      }
+    }
+  }
+
+  getTaskTitle(taskId: string) {
+    return this.taskTitles[taskId];
   }
 
   createTask() {
@@ -47,25 +64,27 @@ export class BoardComponent implements OnInit {
       title: this.newTaskTitle,
       description: this.newTaskDescription,
       column: 'todo',
-      storypoints: this.newTaskStorypoints,
+      storyPoints: this.newTaskstoryPoints,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     this.socket.addTask(newTask);
     this.newTaskTitle = '';
     this.newTaskDescription = '';
-    this.newTaskStorypoints = 0;
+    this.newTaskstoryPoints = 0;
   }
 
   drop(event: CdkDragDrop<Task[]>, targetCol: Column) {
     const task = event.previousContainer.data[event.previousIndex];
     if (task.column === targetCol) return;
+
     transferArrayItem(
       event.previousContainer.data,
       event.container.data,
       event.previousIndex,
       event.currentIndex
     );
+
     this.socket.moveTask(task.id, targetCol);
   }
 

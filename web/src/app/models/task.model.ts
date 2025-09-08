@@ -6,7 +6,7 @@ export interface Task {
   title: string;
   description?: string;
   column: Column;
-  storypoints?: number;
+  storyPoints?: number;
   createdAt: string;
   updatedAt: string;
   assignedTo?: { id: string; name: string }; // nuevo
