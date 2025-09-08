@@ -5,7 +5,6 @@ import { TaskEntity } from './task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
 import { Column } from './task-column.enum';
-import { UserEntity } from 'src/users/user.entity';
 
 @Injectable()
 export class TasksService {
@@ -23,13 +22,12 @@ export class TasksService {
     };
   }
 
-  async create(dto: CreateTaskDto, creator: UserEntity): Promise<TaskEntity> {
+  async create(dto: CreateTaskDto): Promise<TaskEntity> {
   const task = this.taskRepo.create({
     title: dto.title,
     description: dto.description,
     column: Column.TODO,       // enum o string
     storyPoints: dto.storyPoints ?? 1,
-    createdBy: creator,
   });
 
   return this.taskRepo.save(task);

@@ -26,6 +26,7 @@ export class SocketService {
 
   connect() {
     this.socket = io('https://dsn-test-production.up.railway.app', {
+      transports: ['websocket'], // <- fuerza solo websocket
       autoConnect: false,
     });
 
