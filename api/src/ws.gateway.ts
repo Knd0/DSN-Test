@@ -33,10 +33,10 @@ export class WsGateway
   constructor(private readonly tasksService: TasksService) {}
 
   // -------------------------
-  // Helper: mapear UserEntity a {id, username}
+  // Helper: mapear UserEntity a {id, name}
   // -------------------------
-  private mapUser(user?: UserEntity): { id: string; username: string } | undefined {
-    return user ? { id: user.id, username: user.name } : undefined;
+  private mapUser(user?: UserEntity): { id: string; name: string } | undefined {
+    return user ? { id: user.id, name: user.name } : undefined;
   }
 
   // Cargar board desde la DB al iniciar

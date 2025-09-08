@@ -13,7 +13,7 @@ import { AuthService } from '../services/auth.service';
       <form (ngSubmit)="register()" class="bg-gray-800 p-8 rounded-xl w-80 flex flex-col gap-4">
         <h2 class="text-2xl font-bold mb-4 text-center">Registro</h2>
 
-        <input type="text" [(ngModel)]="username" name="username" placeholder="Usuario" class="p-2 rounded bg-gray-700" required>
+        <input type="text" [(ngModel)]="name" name="name" placeholder="Usuario" class="p-2 rounded bg-gray-700" required>
         <input type="email" [(ngModel)]="email" name="email" placeholder="Email" class="p-2 rounded bg-gray-700" required>
         <input type="password" [(ngModel)]="password" name="password" placeholder="Contraseña" class="p-2 rounded bg-gray-700" required>
         <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" placeholder="Confirmar contraseña" class="p-2 rounded bg-gray-700" required>
@@ -29,7 +29,7 @@ import { AuthService } from '../services/auth.service';
   `
 })
 export class RegisterComponent {
-  username = '';
+  name = '';
   email = '';
   password = '';
   confirmPassword = '';
@@ -42,7 +42,7 @@ export class RegisterComponent {
       return;
     }
 
-    const success = await this.auth.register(this.username, this.email, this.password);
+    const success = await this.auth.register(this.name, this.email, this.password);
     if (success) {
       alert('Usuario registrado correctamente');
       this.router.navigate(['/login']);

@@ -119,7 +119,7 @@ import type { Column, Task } from '../models/task.model';
                 >{{ task.createdAt | date : 'shortTime' }}</span
               >
               <span *ngIf="task.assignedTo" class="text-indigo-300 text-xs"
-                >Asignado a: {{ task.assignedTo.username }}</span
+                >Asignado a: {{ task.assignedTo.name }}</span
               >
             </div>
           </div>
@@ -163,7 +163,7 @@ import type { Column, Task } from '../models/task.model';
           >
             <option [ngValue]="null">-- Ninguno --</option>
             <option *ngFor="let user of availableUsers" [ngValue]="user">
-              {{ user.username }}
+              {{ user.name }}
             </option>
           </select>
         </div>

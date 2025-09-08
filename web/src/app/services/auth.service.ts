@@ -3,7 +3,7 @@ import { Injectable, signal } from '@angular/core';
 
 export interface User {
   id: string;
-  username: string;
+  name: string;
   email?: string;
 }
 
@@ -28,7 +28,7 @@ export class AuthService {
 
   // web/src/app/services/auth.service.ts
   async register(
-    username: string,
+    name: string,
     email: string,
     password: string
   ): Promise<boolean> {
@@ -38,7 +38,7 @@ export class AuthService {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, email, password }),
+          body: JSON.stringify({ name, email, password }),
         }
       );
       return res.ok;
@@ -48,14 +48,14 @@ export class AuthService {
     }
   }
 
-  async login(username: string, password: string): Promise<boolean> {
+  async login(name: string, password: string): Promise<boolean> {
     try {
       const res = await fetch(
         'https://dsn-test-production.up.railway.app/auth/login',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ name, password }),
         }
       );
 
