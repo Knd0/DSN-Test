@@ -20,8 +20,8 @@ import { FormsModule } from '@angular/forms';
 
         <input
           type="text"
-          [(ngModel)]="username"
-          name="username"
+          [(ngModel)]="name"
+          name="name"
           placeholder="Usuario"
           class="p-2 rounded bg-gray-700"
           required
@@ -55,13 +55,13 @@ import { FormsModule } from '@angular/forms';
   `,
 })
 export class LoginComponent {
-  username = '';
+  name = '';
   password = '';
 
   constructor(private auth: AuthService, private router: Router) {}
 
   async login() {
-    const ok = await this.auth.login(this.username, this.password);
+    const ok = await this.auth.login(this.name, this.password);
     if (ok) this.router.navigate(['/home']);
     else alert('Usuario o contraseña inválidos');
   }
