@@ -18,9 +18,7 @@ export class AuditLog {
   @Column({ type: 'json', nullable: true })
   newState?: any;
 
-  @Column({ nullable: true })
-  userId?: string;
-
+  
   @CreateDateColumn()
   timestamp: Date;
 }

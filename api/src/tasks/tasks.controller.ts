@@ -13,8 +13,7 @@ import { MoveTaskDto } from './dto/move-task.dto';
 import { WsGateway } from '../ws.gateway';
 import type { Task } from './task.model';
 import type { TaskEntity } from './task.entity';
-import type { UserEntity } from '../users/user.entity';
-import { User } from '../users/user.decorator'; // decorador que devuelve el usuario logueado
+
 
 @Controller('tasks')
 export class TasksController {
@@ -29,8 +28,8 @@ export class TasksController {
   }
 
   @Post()
-  async create(@Body() dto: CreateTaskDto, @User() user: UserEntity) {
-    const entity: TaskEntity = await this.tasks.create(dto, user);
+  async create(@Body() dto: CreateTaskDto) {
+    const entity: TaskEntity = await this.tasks.create(dto);
     const task: Task = this.mapEntityToTask(entity);
     this.ws.emitUpdate({ type: 'created', task });
     return task;
@@ -70,13 +69,6 @@ export class TasksController {
       description: entity.description,
       column: entity.column,
       storyPoints: entity.storyPoints,
-      createdBy: entity.createdBy
-        ? { id: entity.createdBy.id, name: entity.createdBy.name }
-        : undefined,
-      assignedTo: entity.assignedTo
-        ? { id: entity.assignedTo.id, name: entity.assignedTo.name }
-        : undefined,
-
       createdAt: entity.createdAt.toISOString(),
       updatedAt: entity.updatedAt.toISOString(),
     };
