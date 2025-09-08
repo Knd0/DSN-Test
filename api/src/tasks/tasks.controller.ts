@@ -71,10 +71,10 @@ export class TasksController {
       column: entity.column,
       storyPoints: entity.storyPoints,
       createdBy: entity.createdBy
-        ? { id: entity.createdBy.id, username: entity.createdBy.name }
+        ? { id: entity.createdBy.id, name: entity.createdBy.name }
         : undefined,
       assignedTo: entity.assignedTo
-        ? { id: entity.assignedTo.id, username: entity.assignedTo.name }
+        ? { id: entity.assignedTo.id, name: entity.assignedTo.name }
         : undefined,
 
       createdAt: entity.createdAt.toISOString(),

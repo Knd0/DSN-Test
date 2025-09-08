@@ -9,5 +9,5 @@ export interface Task {
   storypoints?: number;
   createdAt: string;
   updatedAt: string;
-  assignedTo?: { id: string; username: string }; // nuevo
+  assignedTo?: { id: string; name: string }; // nuevo
 }
