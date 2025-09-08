@@ -1,29 +1,30 @@
-import { Entity, PrimaryGeneratedColumn, Column as ORMColumn, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { UserEntity } from '../users/user.entity';
-import { Column as TaskColumn } from './task-column.enum'; // enum 'todo' | 'doing' | 'done'
+// task.entity.ts
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column as ColumnType,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { Column } from './task-column.enum';
 
 @Entity('tasks')
 export class TaskEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ORMColumn()
+  @ColumnType({ length: 255 })
   title: string;
 
-  @ORMColumn({ nullable: true })
+  @ColumnType({ type: 'text', nullable: true })
   description?: string;
 
-  @ORMColumn({ type: 'enum', enum: TaskColumn, default: TaskColumn.TODO })
-  column: TaskColumn;
+  @ColumnType({ type: 'enum', enum: Column, default: Column.TODO })
+  column: Column;
 
-  @ORMColumn({ type: 'int', default: 1 })
+  @ColumnType({ type: 'int', default: 0 })
   storyPoints: number;
-
-  @ManyToOne(() => UserEntity, { nullable: true })
-  createdBy?: UserEntity;
-
-  @ManyToOne(() => UserEntity, { nullable: true })
-  assignedTo?: UserEntity;
 
   @CreateDateColumn()
   createdAt: Date;

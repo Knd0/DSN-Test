@@ -1,0 +1,47 @@
+.input {
+  padding: 0.75rem;
+  border-radius: 1rem;
+  border: 1px solid #444;
+  color: #111;
+  width: 100%;
+  &:focus {
+    outline: none;
+    ring: 2px indigo-500;
+  }
+}
+
+.btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(to right, #4f46e5, #a855f7);
+  padding: 0.75rem 1.25rem;
+  border-radius: 1rem;
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.task-card {
+  background: rgba(55, 65, 81, 0.9);
+  padding: 1rem;
+  border-radius: 1rem;
+  cursor: pointer;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+.modal {
+  background: #1f2937;
+  padding: 1.5rem;
+  border-radius: 1.5rem;
+  width: 24rem;
+}
