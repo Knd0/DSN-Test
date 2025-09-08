@@ -51,15 +51,23 @@
   </div>
 
   <!-- Auditoría -->
-  <div class="mt-10 bg-gray-800/70 p-4 rounded-2xl shadow-xl max-h-64 overflow-y-auto">
-    <h3 class="text-lg font-bold mb-2 text-indigo-400">Auditoría de cambios</h3>
-    <ul>
-      <li *ngFor="let evt of socket.auditLog()" class="mb-1 text-gray-300 text-sm">
-        [{{ evt.timestamp | date:'shortTime' }}] Tarea 
-        "<span class="text-indigo-300">{{ evt.task.title }}</span>" 
-        {{ evt.type }}
-        <span *ngIf="evt.type==='moved'">a {{ evt.task.column }}</span>
-      </li>
-    </ul>
-  </div>
+  <!-- Auditoría -->
+<div class="mt-10 bg-gray-800/70 p-4 rounded-2xl shadow-xl max-h-64 overflow-y-auto">
+  <h3 class="text-lg font-bold mb-2 text-indigo-400">Auditoría de cambios</h3>
+  <ul>
+    <li *ngFor="let evt of socket.auditLog()" class="mb-1 text-gray-300 text-sm">
+      [{{ evt.timestamp | date:'shortTime' }}] 
+      Tarea "<span class="text-indigo-300">{{ evt.task.title }}</span>" 
+      <ng-container [ngSwitch]="evt.type">
+        <span *ngSwitchCase="'created'" class="text-green-400">creada</span>
+        <span *ngSwitchCase="'updated'" class="text-yellow-400">actualizada</span>
+        <span *ngSwitchCase="'deleted'" class="text-red-400">eliminada</span>
+        <span *ngSwitchCase="'moved'" class="text-blue-400">
+          movida de <span class="font-semibold">{{ evt.fromColumn }}</span> a <span class="font-semibold">{{ evt.toColumn }}</span>
+        </span>
+      </ng-container>
+    </li>
+  </ul>
+</div>
+
 </div>

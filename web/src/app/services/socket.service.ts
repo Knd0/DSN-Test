@@ -6,6 +6,8 @@ import type { Board } from '../models/board.model';
 export interface AuditEvent {
   type: 'created' | 'moved' | 'updated' | 'deleted';
   task: Task;
+  fromColumn?: Column;
+  toColumn?: Column;
   timestamp: string;
 }
 
@@ -47,7 +49,12 @@ export class SocketService {
     // actualizaciones en tiempo real
     this.socket.on(
       'board:update',
-      (event: { type: 'created' | 'moved' | 'updated' | 'deleted'; task: Task }) => {
+      (event: {
+        type: 'created' | 'moved' | 'updated' | 'deleted';
+        task: Task;
+        fromColumn?: Column;
+        toColumn?: Column;
+      }) => {
         this.applyBoardUpdate(event);
 
         const newEvent: AuditEvent = {
@@ -112,20 +119,29 @@ export class SocketService {
     this.socket.emit('board:update', { type: 'created', task });
   }
 
-  moveTask(taskId: string, column: Column) {
+  moveTask(taskId: string, toColumn: Column) {
     const current = { ...this._board() };
     let movedTask: Task | undefined;
+    let fromColumn: Column | undefined;
+
     (['todo', 'doing', 'done'] as Column[]).forEach((col) => {
       const index = current[col].findIndex((t) => t.id === taskId);
       if (index !== -1) {
-        movedTask = { ...current[col][index], column };
+        movedTask = { ...current[col][index], column: toColumn };
+        fromColumn = col;
         current[col].splice(index, 1);
       }
     });
-    if (movedTask) {
-      current[column].push(movedTask);
+
+    if (movedTask && fromColumn) {
+      current[toColumn].push(movedTask);
       this._board.set(current);
-      this.socket.emit('board:update', { type: 'moved', task: movedTask });
+      this.socket.emit('board:update', {
+        type: 'moved',
+        task: movedTask,
+        fromColumn,
+        toColumn,
+      });
     }
   }
 
@@ -140,14 +156,18 @@ export class SocketService {
 
   removeTask(taskId: string) {
     const current = { ...this._board() };
+    let removedTask: Task | undefined;
+
     (['todo', 'doing', 'done'] as Column[]).forEach((col) => {
+      const index = current[col].findIndex((t) => t.id === taskId);
+      if (index !== -1) removedTask = current[col][index];
       current[col] = current[col].filter((t) => t.id !== taskId);
     });
-    this._board.set(current);
-    this.socket.emit('board:update', {
-      type: 'deleted',
-      task: { id: taskId } as Task,
-    });
+
+    if (removedTask) {
+      this._board.set(current);
+      this.socket.emit('board:update', { type: 'deleted', task: removedTask });
+    }
   }
 
   // -------------------------
@@ -156,11 +176,13 @@ export class SocketService {
   private applyBoardUpdate(event: {
     type: 'created' | 'moved' | 'updated' | 'deleted';
     task: Task;
+    fromColumn?: Column;
+    toColumn?: Column;
   }) {
     const task = event.task;
+    const current = { ...this._board() };
 
     // eliminar de todas las columnas
-    const current = { ...this._board() };
     (['todo', 'doing', 'done'] as Column[]).forEach((col) => {
       current[col] = current[col].filter((t) => t.id !== task.id);
     });
