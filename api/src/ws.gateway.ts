@@ -7,13 +7,12 @@ import {
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
-import { OnModuleInit } from '@nestjs/common';
-import { Injectable } from '@nestjs/common';
+import { OnModuleInit, Injectable } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { Task } from './tasks/task.model';
 import { TasksService } from './tasks/tasks.service';
+import { AuditLogService } from './audit/audit-log.service';
 import type { TaskEntity } from './tasks/task.entity';
-import type { UserEntity } from './users/user.entity';
 
 interface Board {
   todo: Task[];
@@ -30,35 +29,32 @@ export class WsGateway
 
   private board: Board = { todo: [], doing: [], done: [] };
 
-  constructor(private readonly tasksService: TasksService) {}
-
-  // -------------------------
-  // Helper: mapear UserEntity a {id, name}
-  // -------------------------
-  private mapUser(user?: UserEntity): { id: string; name: string } | undefined {
-    return user ? { id: user.id, name: user.name } : undefined;
-  }
+  constructor(
+    private readonly tasksService: TasksService,
+    private readonly auditService: AuditLogService,
+  ) {}
 
   // Cargar board desde la DB al iniciar
   async onModuleInit() {
     try {
       const boardEntities = await this.tasksService.findBoard();
-      const mapTask = (t: TaskEntity): Task => ({
+      const mapTask = (
+        t: TaskEntity,
+        col: 'todo' | 'doing' | 'done',
+      ): Task => ({
         id: t.id,
         title: t.title,
         description: t.description,
-        column: t.column,
-        storyPoints: t.storyPoints,
-        createdBy: this.mapUser(t.createdBy),
-        assignedTo: this.mapUser(t.assignedTo),
+        column: col,
+        storyPoints: t.storyPoints ?? 0,
         createdAt: t.createdAt.toISOString(),
         updatedAt: t.updatedAt.toISOString(),
       });
 
       this.board = {
-        todo: boardEntities.todo.map(mapTask),
-        doing: boardEntities.doing.map(mapTask),
-        done: boardEntities.done.map(mapTask),
+        todo: boardEntities.todo.map((t) => mapTask(t, 'todo')),
+        doing: boardEntities.doing.map((t) => mapTask(t, 'doing')),
+        done: boardEntities.done.map((t) => mapTask(t, 'done')),
       };
 
       console.log('Board cargado desde DB:', this.board);
@@ -77,13 +73,35 @@ export class WsGateway
   }
 
   @SubscribeMessage('board:update')
-  handleUpdate(
+  async handleUpdate(
     @MessageBody()
     event: { type: 'created' | 'moved' | 'updated' | 'deleted'; task: Task },
-    @ConnectedSocket() client: Socket
+    @ConnectedSocket() client: Socket,
   ) {
+    const previousState = this.getPreviousState(event.task.id);
+
+    // Guardar en auditoría sin usuario
+    await this.auditService.createLog({
+      taskId: event.task.id,
+      action: event.type,
+      previousState: previousState || null,
+      newState: event.task,
+    });
+
+    // Aplicar cambios al board
     this.applyUpdate(event);
+
+    // Emitir a todos los clientes excepto quien envió
     client.broadcast.emit('board:update', event);
+
+    // Emitir también evento de auditoría a todos
+    this.server.emit('audit:new', {
+      taskId: event.task.id,
+      action: event.type,
+      previousState,
+      newState: event.task,
+      timestamp: new Date(),
+    });
   }
 
   public emitUpdate(event: { type: 'created' | 'moved' | 'updated' | 'deleted'; task: Task }) {
@@ -103,6 +121,15 @@ export class WsGateway
     if (event.type !== 'deleted') {
       this.board[task.column].push(task);
     }
+  }
+
+  private getPreviousState(taskId: string) {
+    const allCols: (keyof Board)[] = ['todo', 'doing', 'done'];
+    for (const col of allCols) {
+      const task = this.board[col].find((t) => t.id === taskId);
+      if (task) return { ...task };
+    }
+    return null;
   }
 
   public getBoardSnapshot(): Board {

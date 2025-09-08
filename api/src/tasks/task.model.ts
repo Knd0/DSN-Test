@@ -4,11 +4,10 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  column: 'todo' | 'doing' | 'done';
-  storyPoints: number; // nueva
-  createdBy?: { id: string; name: string }; // nueva
-  assignedTo?: { id: string; name: string }; // nueva
+  storyPoints: number;   
+  column: 'todo' | 'doing' | 'done'; 
   createdAt: string;
   updatedAt: string;
 }
+
 

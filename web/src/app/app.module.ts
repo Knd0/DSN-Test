@@ -5,8 +5,6 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { routes } from './app.routes';
 import { AppComponent } from './app.component';
-import { LoginComponent } from './pages/login.component';
-import { BoardComponent } from './pages/board.component';
 
 @NgModule({
   declarations: [AppComponent],
