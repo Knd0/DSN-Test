@@ -6,6 +6,17 @@ Mini-Kanban en **tiempo real** con tres columnas: To-do / Doing / Done. Los usua
 
 ---
 
+## 🔗 Deployment / Demo
+
+El proyecto está **deployado y funcionando en línea**. Pueden probarlo directamente:  
+
+- **Frontend (Angular 17)**: [https://dsn-test.vercel.app/](https://dsn-test.vercel.app/)  
+- **Backend (NestJS + WebSocket)**: [https://dsn-test-production.up.railway.app/](https://dsn-test-production.up.railway.app/)  
+
+Simplemente accediendo al frontend podrán ver el Mini-Kanban en acción y probar la **actualización en tiempo real** de tareas y auditoría.
+
+---
+
 ## 📂 Estructura del repositorio
 
 ```
