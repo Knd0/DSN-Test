@@ -1,15 +1,11 @@
-// web/src/app/app.component.ts
+// app.component.ts
 import { Component } from '@angular/core';
-import { BoardComponent } from './board/board.component';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [BoardComponent],
-  template: `<app-board></app-board>`,
+  imports: [RouterModule], // <- necesario para <router-outlet>
+  template: `<router-outlet></router-outlet>`,
 })
-export class AppComponent {
-  title(title: any) {
-    throw new Error('Method not implemented.');
-  }
-}
+export class AppComponent {}

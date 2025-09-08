@@ -13,6 +13,7 @@ import { Task } from './tasks/task.model'; // o TaskEntity según tu implementac
 import { TasksService } from './tasks/tasks.service';
 import { AuditLogService } from './audit/audit-log.service';
 
+
 interface Board {
   todo: Task[];
   doing: Task[];
@@ -34,10 +35,12 @@ export class WsGateway
     private readonly auditService: AuditLogService,
   ) {}
 
+
   // Cargar board desde la DB al iniciar
   async onModuleInit() {
     try {
       const boardEntities = await this.tasksService.findBoard();
+
       this.board = {
         todo: boardEntities.todo.map((t) => ({
           ...t,
@@ -55,6 +58,7 @@ export class WsGateway
           updatedAt: t.updatedAt.toISOString(),
         })),
       };
+
       console.log('Board cargado desde DB:', this.board);
     } catch (err) {
       console.error('Error cargando board inicial:', err);
