@@ -4,14 +4,53 @@
   </h1>
 
   <!-- Crear nueva tarea -->
-  <form (ngSubmit)="createTask()" class="mb-10 flex justify-center gap-3 flex-wrap">
-    <input type="text" [(ngModel)]="newTaskTitle" name="title" placeholder="Título..." required class="input" />
-    <input type="text" [(ngModel)]="newTaskDescription" name="description" placeholder="Descripción..." class="input" />
-    <input type="number" [(ngModel)]="newTaskStorypoints" name="storypoints" placeholder="Story Points" min="0" class="input w-32" required />
-    <button type="submit" class="btn-primary">
+  <!-- Formulario de creación + buscador -->
+<div class="mb-8 max-w-3xl mx-auto">
+  <!-- Buscador -->
+  <div class="mb-4 flex flex-wrap gap-3 justify-center">
+    <input
+      type="text"
+      [(ngModel)]="searchText"
+      name="search"
+      placeholder="Buscar tarea..."
+      class="w-full sm:w-64 px-3 py-2 rounded-md border border-gray-600 bg-gray-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+    />
+  </div>
+
+  <!-- Formulario de nueva tarea -->
+  <form (ngSubmit)="createTask()" class="flex flex-wrap justify-center gap-3">
+    <input
+      type="text"
+      [(ngModel)]="newTaskTitle"
+      name="title"
+      placeholder="Título..."
+      required
+      class="px-3 py-2 rounded-md border border-gray-600 bg-gray-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400 w-full sm:w-48"
+    />
+    <input
+      type="text"
+      [(ngModel)]="newTaskDescription"
+      name="description"
+      placeholder="Descripción..."
+      class="px-3 py-2 rounded-md border border-gray-600 bg-gray-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400 w-full sm:w-64"
+    />
+    <input
+      type="number"
+      [(ngModel)]="newTaskstoryPoints"
+      name="storyPoints"
+      placeholder="Story Points"
+      min="0"
+      required
+      class="px-3 py-2 rounded-md border border-gray-600 bg-gray-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400 w-20"
+    />
+    <button
+      type="submit"
+      class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md flex items-center gap-2 transition"
+    >
       <i class="fa-solid fa-plus"></i> Agregar
     </button>
   </form>
+</div>
 
   <!-- Tablero -->
   <div class="flex gap-6 flex-wrap md:flex-nowrap">
@@ -23,7 +62,8 @@
 
       <div *ngIf="filteredBoard[col]" cdkDropList [id]="col" [cdkDropListData]="filteredBoard[col]" [cdkDropListConnectedTo]="getConnectedCols(col)" class="min-h-[200px] flex flex-col gap-3" (cdkDropListDropped)="drop($event, col)">
         <div *ngFor="let task of filteredBoard[col]" cdkDrag class="task-card" (click)="openModal(task)">
-          <div class="truncate max-w-[80%] font-medium">{{ task.title }}</div>
+          <div class="truncate max-w-[80%] font-medium">{{ task?.title ?? '(sin título)' }}</div>
+
           <span class="text-gray-400 text-xs">{{ task.createdAt | date : 'shortTime' }}</span>
         </div>
       </div>
@@ -50,24 +90,42 @@
     </div>
   </div>
 
-  <!-- Auditoría -->
-  <!-- Auditoría -->
-<div class="mt-10 bg-gray-800/70 p-4 rounded-2xl shadow-xl max-h-64 overflow-y-auto">
-  <h3 class="text-lg font-bold mb-2 text-indigo-400">Auditoría de cambios</h3>
-  <ul>
-    <li *ngFor="let evt of socket.auditLog()" class="mb-1 text-gray-300 text-sm">
-      [{{ evt.timestamp | date:'shortTime' }}] 
-      Tarea "<span class="text-indigo-300">{{ evt.task.title }}</span>" 
-      <ng-container [ngSwitch]="evt.type">
-        <span *ngSwitchCase="'created'" class="text-green-400">creada</span>
-        <span *ngSwitchCase="'updated'" class="text-yellow-400">actualizada</span>
-        <span *ngSwitchCase="'deleted'" class="text-red-400">eliminada</span>
-        <span *ngSwitchCase="'moved'" class="text-blue-400">
-          movida de <span class="font-semibold">{{ evt.fromColumn }}</span> a <span class="font-semibold">{{ evt.toColumn }}</span>
-        </span>
-      </ng-container>
-    </li>
-  </ul>
+<div class="mt-8 max-w-2xl mx-auto">
+  <h2 class="text-2xl font-bold text-gray-100 mb-4 border-b border-gray-700 pb-2">Auditoría de Tareas</h2>
+
+  <div class="bg-gray-900 rounded-lg shadow-lg p-4 max-h-[400px] overflow-y-auto">
+    <ul class="space-y-3">
+      <li *ngFor="let evt of socket.auditLog()" class="bg-gray-800 rounded-lg p-3 hover:bg-gray-700 transition flex flex-col">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center space-x-2">
+            <span class="text-gray-400 text-sm">[{{ evt.timestamp | date:'shortTime' }}]</span>
+            <span class="text-indigo-300 font-semibold">{{ evt.task?.title || '(sin título)' }}</span>
+            <span
+              [ngClass]="{
+                'text-green-400': evt.type === 'created',
+                'text-yellow-400': evt.type === 'updated',
+                'text-red-400': evt.type === 'deleted',
+                'text-blue-400': evt.type === 'moved'
+              }"
+              class="ml-2 font-medium text-sm"
+            >
+              {{ evt.type === 'moved' ? 'movida' : evt.type }}
+            </span>
+          </div>
+        </div>
+
+        <div class="mt-2 text-gray-300 text-sm space-y-1 pl-2">
+          <div *ngIf="evt.type === 'moved' && socket.isMoveEvent(evt)">
+            De: <span class="font-semibold">{{ evt.fromColumn }}</span> → A: <span class="font-semibold">{{ evt.toColumn }}</span>
+          </div>
+          <div>Descripción: <span class="italic">{{ evt.task?.description || '(sin descripción)' }}</span></div>
+          <div>Puntos de historia: <span class="font-semibold">{{ evt.task?.storyPoints }}</span></div>
+        </div>
+      </li>
+    </ul>
+  </div>
 </div>
+
+
 
 </div>
