@@ -11,15 +11,16 @@ import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
 import { WsGateway } from '../ws.gateway';
+import { AuditLogService } from '../audit/audit-log.service';
 import type { Task } from './task.model';
 import type { TaskEntity } from './task.entity';
-
 
 @Controller('tasks')
 export class TasksController {
   constructor(
     private readonly tasks: TasksService,
     private readonly ws: WsGateway,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   @Get('/board')
@@ -59,9 +60,17 @@ export class TasksController {
     return task;
   }
 
-  // -------------------------
-  // Helper: mapear TaskEntity a Task plano
-  // -------------------------
+  // Auditoría
+  @Get('audit')
+  getAuditLog() {
+    return this.auditLogService.findAll();
+  }
+
+  @Get('audit/:taskId')
+  getAuditByTask(@Param('taskId') taskId: string) {
+    return this.auditLogService.findByTask(taskId);
+  }
+
   private mapEntityToTask(entity: TaskEntity): Task {
     return {
       id: entity.id,
